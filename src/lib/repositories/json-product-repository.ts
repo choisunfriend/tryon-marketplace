@@ -94,7 +94,7 @@ function mapApiProduct(product: ApiProduct): Product {
     variants: [createVariant(product)],
     rating: 0,
     reviewCount: 0,
-    featured: false,
+    featured: true,
     createdAt,
     updatedAt,
   }
