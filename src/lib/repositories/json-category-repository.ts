@@ -1,7 +1,29 @@
 import type { Category, CategoryRepository } from "@/types"
-import data from "@/data/products.json"
 
-const categories = data.categories as Category[]
+const categories: Category[] = [
+  {
+    id: "cat-clothing",
+    name: "Clothing",
+    slug: "clothing",
+    description: "Clothing selected for virtual try-on and outfit recommendations.",
+    image: {
+      url: "/images/products/placeholder.svg",
+      alt: "Clothing",
+    },
+    order: 1,
+  },
+  {
+    id: "cat-accessories",
+    name: "Accessories",
+    slug: "accessories",
+    description: "Accessories selected to complete the look.",
+    image: {
+      url: "/images/products/placeholder.svg",
+      alt: "Accessories",
+    },
+    order: 2,
+  },
+]
 
 export const jsonCategoryRepository: CategoryRepository & {
   getChildren(parentId: string): Promise<Category[]>
@@ -9,7 +31,7 @@ export const jsonCategoryRepository: CategoryRepository & {
   getAncestors(categoryId: string): Promise<Category[]>
 } = {
   async list() {
-    return categories.sort((a, b) => a.order - b.order)
+    return [...categories].sort((a, b) => a.order - b.order)
   },
 
   async getBySlug(slug) {
@@ -27,21 +49,11 @@ export const jsonCategoryRepository: CategoryRepository & {
   },
 
   async getTopLevel() {
-    return categories
-      .filter((c) => !c.parentId)
-      .sort((a, b) => a.order - b.order)
+    return [...categories].sort((a, b) => a.order - b.order)
   },
 
-  /** Walk up the parent chain and return ancestors ordered root → leaf */
   async getAncestors(categoryId) {
-    const chain: Category[] = []
-    let current = categories.find((c) => c.id === categoryId)
-    while (current) {
-      chain.unshift(current)
-      current = current.parentId
-        ? categories.find((c) => c.id === current!.parentId)
-        : undefined
-    }
-    return chain
+    const category = categories.find((c) => c.id === categoryId)
+    return category ? [category] : []
   },
 }
