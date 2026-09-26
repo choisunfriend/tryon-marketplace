@@ -12,11 +12,8 @@ export interface NavSection {
 // mobile menu, and anywhere else. Edit this one file to update all menus.
 
 export const shopLinks: NavItem[] = [
-  { name: "Electronics", href: "/electronics" },
   { name: "Clothing", href: "/clothing" },
-  { name: "Home & Kitchen", href: "/home-kitchen" },
   { name: "Accessories", href: "/accessories" },
-  { name: "Food & Drink", href: "/food-drink" },
 ]
 
 export const accountLinks: NavItem[] = [
