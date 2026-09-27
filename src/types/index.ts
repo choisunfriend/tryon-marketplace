@@ -3,7 +3,6 @@
 // ============================================================================
 
 // --- Brand ---
-
 export interface Brand {
   id: string
   name: string
@@ -12,7 +11,6 @@ export interface Brand {
 }
 
 // --- CMS-style Pages ---
-
 export interface CmsPage {
   id: string
   title: string
@@ -26,7 +24,6 @@ export interface CmsPage {
 }
 
 // --- Blog Posts ---
-
 export interface BlogPost {
   id: string
   title: string
@@ -41,7 +38,6 @@ export interface BlogPost {
 }
 
 // --- Product ---
-
 export type ProductStatus = "draft" | "active" | "archived"
 
 export interface ProductImage {
@@ -49,6 +45,23 @@ export interface ProductImage {
   alt: string
   width?: number
   height?: number
+}
+
+/**
+ * 3D model information.
+ *
+ * The current 3D system uses one unified body model.
+ * It is intentionally NOT connected to product size.
+ *
+ * Only these three pieces of information are managed:
+ * - model file
+ * - applicable gender
+ * - applicable body part
+ */
+export interface Product3D {
+  modelPath: string
+  gender: string
+  bodyPart: string
 }
 
 export interface ProductOption {
@@ -74,32 +87,51 @@ export interface ProductVariant {
   options: ProductOption[]
   images: ProductImage[]
   weight?: number
-  dimensions?: { length: number; width: number; height: number }
+  dimensions?: {
+    length: number
+    width: number
+    height: number
+  }
 }
 
 export interface Product {
   id: string
   name: string
   slug: string
+
   /** Short blurb shown in the product info column (1–2 sentences) */
   description: string
+
   /** Full HTML description shown below gallery/add-to-cart (.blog-body prose) */
   body?: string
+
   images: ProductImage[]
+
   status: ProductStatus
+
   brandId: string
   categoryIds: string[]
   tags: string[]
+
   variants: ProductVariant[]
+
   rating: number
   reviewCount: number
   featured: boolean
+
   createdAt: string
   updatedAt: string
+
+  /**
+   * 3D model information.
+   *
+   * This is intentionally independent from product size.
+   * Size-specific 3D models are not part of the current system.
+   */
+  model3d?: Product3D
 }
 
 // --- Category ---
-
 export interface Category {
   id: string
   name: string
@@ -111,7 +143,6 @@ export interface Category {
 }
 
 // --- Cart ---
-
 export interface CartItem {
   id: string
   variantId: string
@@ -136,7 +167,6 @@ export interface Cart {
 }
 
 // --- Order ---
-
 export type OrderStatus =
   | "pending"
   | "processing"
@@ -186,7 +216,6 @@ export interface Order {
 }
 
 // --- User ---
-
 export type UserRole = "customer" | "admin"
 
 export interface User {
@@ -201,7 +230,6 @@ export interface User {
 }
 
 // --- Address ---
-
 export type AddressType = "shipping" | "billing"
 
 export interface Address {
@@ -220,8 +248,11 @@ export interface Address {
 }
 
 // --- Payment ---
-
-export type PaymentMethod = "card" | "bank_transfer" | "wallet" | "other"
+export type PaymentMethod =
+  | "card"
+  | "bank_transfer"
+  | "wallet"
+  | "other"
 
 export interface Payment {
   id: string
@@ -235,7 +266,6 @@ export interface Payment {
 }
 
 // --- Review (placeholder for v2) ---
-
 export interface Review {
   id: string
   productId: string
@@ -252,7 +282,6 @@ export interface Review {
 // ============================================================================
 
 // --- API Response ---
-
 export type ApiResponse<T> =
   | { data: T; error?: never }
   | { data?: never; error: ApiError }
@@ -265,7 +294,6 @@ export interface ApiError {
 }
 
 // --- Pagination ---
-
 export interface PaginationParams {
   page: number
   limit: number
@@ -286,7 +314,6 @@ export interface PaginatedResult<T> {
 }
 
 // --- Filtering & Sorting ---
-
 export type SortOrder = "asc" | "desc"
 
 export interface SortOption {
@@ -308,7 +335,6 @@ export interface ProductFilters {
 }
 
 // --- Checkout Provider ---
-
 export interface CheckoutSession {
   id: string
   url: string
@@ -326,9 +352,14 @@ export interface WebhookResult {
 export interface CheckoutProvider {
   createSession(
     cart: Cart,
-    customer?: { email: string; shippingAddress?: Address }
+    customer?: {
+      email: string
+      shippingAddress?: Address
+    }
   ): Promise<CheckoutSession>
+
   getSession(sessionId: string): Promise<CheckoutSession>
+
   handleWebhook(
     payload: unknown,
     signature: string
@@ -336,20 +367,24 @@ export interface CheckoutProvider {
 }
 
 // --- Data Repository Interfaces ---
-
 export interface ProductRepository {
   list(
     filters?: ProductFilters,
     sort?: SortOption,
     pagination?: PaginationParams
   ): Promise<PaginatedResult<Product>>
+
   getBySlug(slug: string): Promise<Product | null>
+
   getById(id: string): Promise<Product | null>
+
   getFeatured(limit?: number): Promise<Product[]>
+
   getByCategory(
     categorySlug: string,
     pagination?: PaginationParams
   ): Promise<PaginatedResult<Product>>
+
   search(
     query: string,
     pagination?: PaginationParams
@@ -358,7 +393,9 @@ export interface ProductRepository {
 
 export interface CategoryRepository {
   list(): Promise<Category[]>
+
   getBySlug(slug: string): Promise<Category | null>
+
   getById(id: string): Promise<Category | null>
 }
 
@@ -367,7 +404,15 @@ export interface OrderRepository {
     userId?: string,
     pagination?: PaginationParams
   ): Promise<PaginatedResult<Order>>
+
   getById(id: string): Promise<Order | null>
-  create(order: Omit<Order, "id" | "createdAt" | "updatedAt">): Promise<Order>
-  updateStatus(id: string, status: OrderStatus): Promise<Order>
+
+  create(
+    order: Omit<Order, "id" | "createdAt" | "updatedAt">
+  ): Promise<Order>
+
+  updateStatus(
+    id: string,
+    status: OrderStatus
+  ): Promise<Order>
 }
