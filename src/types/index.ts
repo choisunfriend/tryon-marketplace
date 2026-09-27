@@ -52,6 +52,7 @@ export type ProductBodyPart =
   | "full_body"
 
 export interface ProductImage {
+  id?: string
   url: string
   alt: string
   width?: number
@@ -184,7 +185,7 @@ export interface Product {
   // Avatar 적용 정보
   avatar: ProductAvatar
 
-  // 시스템 날짜
+  // 시스템 날짜 — 새로운 상품 구조
   created_at: string
   updated_at: string
 
@@ -205,6 +206,10 @@ export interface Product {
   rating: number
   reviewCount: number
   featured: boolean
+
+  // 기존 코드에서 사용하는 camelCase 날짜
+  createdAt: string
+  updatedAt: string
 
   // 기존 3D 구조 호환
   model3d?: Product3D
