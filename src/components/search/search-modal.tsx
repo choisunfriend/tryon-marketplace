@@ -10,7 +10,8 @@ import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import type { Product } from "@/types"
 import data from "@/data/products.json"
 
-const allProducts = data.products as Product[]
+// TODO: 검색 모달은 아직 예전 데모 JSON을 봅니다(Worker 상품 아님). 타입만 맞춰 빌드가 되게 함.
+const allProducts = data.products as unknown as Product[]
 
 const popularSearches = [
   "Headphones",
