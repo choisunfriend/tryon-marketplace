@@ -4,6 +4,10 @@
   "main": ".open-next/worker.js",
   "name": "tryon-marketplace-web",
   "compatibility_date": "2025-12-01",
+  // 접속 주소(https://tryon-marketplace-web.choisunfriend.workers.dev)를 배포 때마다 켜둡니다
+  "workers_dev": true,
+  // 브랜치별 미리보기 주소는 쓰지 않음
+  "preview_urls": false,
   // global_fetch_strictly_public: 같은 계정의 다른 workers.dev(백엔드 API)를 fetch 할 때 막히지 않게
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
