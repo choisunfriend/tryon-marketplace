@@ -45,3 +45,8 @@ next-env.d.ts
 
 # audit artifacts
 audit-screenshots/
+
+# Cloudflare (OpenNext)
+.open-next
+.wrangler
+.dev.vars
