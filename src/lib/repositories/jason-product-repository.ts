@@ -1,4 +1,3 @@
-```ts
 import type {
   Product,
   ProductFilters,
@@ -6,8 +5,8 @@ import type {
   SortOption,
   PaginationParams,
   PaginatedResult,
-  ProductImage,
   ProductVariant,
+  ProductImage,
 } from "@/types"
 
 const API_BASE_URL =
@@ -21,36 +20,40 @@ interface ApiProduct {
   name: string
   brand?: string | null
   category?: string | null
+  subcategory?: string | null
   gender?: string | null
   price?: number | null
   currency?: string | null
   description?: string | null
+
+  // 3D model
   model_path?: string | null
+  model_gender?: string | null
+  body_part?: string | null
+
   created_at?: string | null
+  updated_at?: string | null
 }
 
-interface ProductsApiResponse {
+interface ApiProductsResponse {
   success: boolean
   products: ApiProduct[]
-  error?: string
 }
 
-function createSlug(value: string): string {
-  return value
+function createSlug(name: string): string {
+  return name
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
 }
 
 function createImage(product: ApiProduct): ProductImage[] {
-  if (!product.model_path) {
-    return []
-  }
-
   return [
     {
-      url: product.model_path,
+      id: `${product.id}-image`,
+      url: "/images/products/placeholder.svg",
       alt: product.name,
     },
   ]
@@ -77,8 +80,11 @@ function createVariant(product: ApiProduct): ProductVariant {
 }
 
 function mapApiProduct(product: ApiProduct): Product {
-  const createdAt = product.created_at ?? new Date().toISOString()
-  const images = createImage(product)
+  const createdAt =
+    product.created_at ?? new Date().toISOString()
+
+  const updatedAt =
+    product.updated_at ?? createdAt
 
   return {
     id: product.id,
@@ -86,26 +92,37 @@ function mapApiProduct(product: ApiProduct): Product {
     slug: createSlug(product.name),
     description: product.description ?? "",
     body: product.description ?? "",
-    images,
+    images: createImage(product),
     status: "active",
     brandId: product.brand ?? "",
-    categoryIds: product.category ? [product.category] : [],
-    tags: product.gender ? [product.gender] : [],
+    categoryIds: product.category
+      ? [product.category]
+      : [],
+    tags: product.gender
+      ? [product.gender]
+      : [],
     variants: [createVariant(product)],
     rating: 0,
     reviewCount: 0,
-    featured: false,
+    featured: true,
     createdAt,
-    updatedAt: createdAt,
+    updatedAt,
+
+    // 3D model
+    // 현재는 하나의 일체형 바디 모델을 사용하며
+    // 상품 사이즈와 연결하지 않습니다.
+    model3d: product.model_path
+      ? {
+          modelPath: product.model_path,
+          gender: product.model_gender ?? "",
+          bodyPart: product.body_part ?? "",
+        }
+      : undefined,
   }
 }
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch(PRODUCTS_API_URL, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
     cache: "no-store",
   })
 
@@ -115,10 +132,11 @@ async function fetchProducts(): Promise<Product[]> {
     )
   }
 
-  const data = (await response.json()) as ProductsApiResponse
+  const data =
+    (await response.json()) as ApiProductsResponse
 
   if (!data.success) {
-    throw new Error(data.error ?? "Failed to fetch products")
+    throw new Error("Product API returned success=false")
   }
 
   return data.products.map(mapApiProduct)
@@ -128,9 +146,13 @@ function applyFilters(
   items: Product[],
   filters?: ProductFilters
 ): Product[] {
-  if (!filters) return items
+  if (!filters) {
+    return items.filter((p) => p.status === "active")
+  }
 
-  let result = items.filter((p) => p.status === "active")
+  let result = items.filter(
+    (p) => p.status === "active"
+  )
 
   if (filters.category) {
     result = result.filter((p) =>
@@ -144,8 +166,19 @@ function applyFilters(
     result = result.filter((p) => {
       const price = p.variants[0]?.price ?? 0
 
-      if (min !== undefined && price < min) return false
-      if (max !== undefined && price > max) return false
+      if (
+        min !== undefined &&
+        price < min * 100
+      ) {
+        return false
+      }
+
+      if (
+        max !== undefined &&
+        price > max * 100
+      ) {
+        return false
+      }
 
       return true
     })
@@ -155,26 +188,37 @@ function applyFilters(
     result = result.filter((p) =>
       p.variants.some((v) =>
         filters.inStock
-          ? v.inventory.quantity > 0 || v.inventory.allowBackorder
+          ? v.inventory.quantity > 0 ||
+            v.inventory.allowBackorder
           : true
       )
     )
   }
 
   if (filters.search) {
-    const query = filters.search.toLowerCase()
+    const query =
+      filters.search.toLowerCase()
 
     result = result.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query) ||
-        p.tags.some((t) => t.toLowerCase().includes(query))
+        p.description
+          .toLowerCase()
+          .includes(query) ||
+        p.tags.some((t) =>
+          t.toLowerCase().includes(query)
+        )
     )
   }
 
-  if (filters.tags && filters.tags.length > 0) {
+  if (
+    filters.tags &&
+    filters.tags.length > 0
+  ) {
     result = result.filter((p) =>
-      filters.tags!.some((tag) => p.tags.includes(tag))
+      filters.tags!.some((t) =>
+        p.tags.includes(t)
+      )
     )
   }
 
@@ -192,28 +236,42 @@ function applySort(
 
     switch (sort.field) {
       case "price": {
-        const priceA = a.variants[0]?.price ?? 0
-        const priceB = b.variants[0]?.price ?? 0
+        const priceA =
+          a.variants[0]?.price ?? 0
 
-        comparison = priceA - priceB
+        const priceB =
+          b.variants[0]?.price ?? 0
+
+        comparison =
+          priceA - priceB
+
         break
       }
 
       case "name":
-        comparison = a.name.localeCompare(b.name)
+        comparison =
+          a.name.localeCompare(b.name)
+
         break
 
       case "createdAt":
         comparison =
-          new Date(a.createdAt).getTime() -
-          new Date(b.createdAt).getTime()
+          new Date(
+            a.createdAt
+          ).getTime() -
+          new Date(
+            b.createdAt
+          ).getTime()
+
         break
 
       default:
         comparison = 0
     }
 
-    return sort.order === "desc" ? -comparison : comparison
+    return sort.order === "desc"
+      ? -comparison
+      : comparison
   })
 }
 
@@ -221,86 +279,140 @@ function paginate<T>(
   items: T[],
   pagination?: PaginationParams
 ): PaginatedResult<T> {
-  const page = pagination?.page ?? 1
-  const limit = pagination?.limit ?? 12
+  const page =
+    pagination?.page ?? 1
+
+  const limit =
+    pagination?.limit ?? 12
 
   const total = items.length
-  const totalPages = Math.ceil(total / limit)
-  const offset = (page - 1) * limit
+
+  const totalPages =
+    Math.ceil(total / limit)
+
+  const offset =
+    (page - 1) * limit
 
   return {
-    items: items.slice(offset, offset + limit),
+    items: items.slice(
+      offset,
+      offset + limit
+    ),
     pagination: {
       total,
       page,
       limit,
       totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1,
+      hasNext:
+        page < totalPages,
+      hasPrev:
+        page > 1,
     },
   }
 }
 
 export const jsonProductRepository: ProductRepository = {
-  async list(filters, sort, pagination) {
-    const products = await fetchProducts()
+  async list(
+    filters,
+    sort,
+    pagination
+  ) {
+    const products =
+      await fetchProducts()
 
-    let result = applyFilters(products, filters)
-    result = applySort(result, sort)
+    let result =
+      applyFilters(
+        products,
+        filters
+      )
 
-    return paginate(result, pagination)
+    result =
+      applySort(
+        result,
+        sort
+      )
+
+    return paginate(
+      result,
+      pagination
+    )
   },
 
   async getBySlug(slug) {
-    const products = await fetchProducts()
+    const products =
+      await fetchProducts()
 
     return (
       products.find(
-        (product) =>
-          product.slug === slug &&
-          product.status === "active"
+        (p) =>
+          p.slug === slug &&
+          p.status === "active"
       ) ?? null
     )
   },
 
   async getById(id) {
-    const products = await fetchProducts()
+    const products =
+      await fetchProducts()
 
-    return products.find((product) => product.id === id) ?? null
+    return (
+      products.find(
+        (p) => p.id === id
+      ) ?? null
+    )
   },
 
   async getFeatured(limit = 4) {
-    const products = await fetchProducts()
+    const products =
+      await fetchProducts()
 
     return products
       .filter(
-        (product) =>
-          product.featured &&
-          product.status === "active"
+        (p) =>
+          p.featured &&
+          p.status === "active"
       )
       .slice(0, limit)
   },
 
-  async getByCategory(categorySlug, pagination) {
-    const products = await fetchProducts()
+  async getByCategory(
+    categorySlug,
+    pagination
+  ) {
+    const products =
+      await fetchProducts()
 
-    const categoryProducts = products.filter(
-      (product) =>
-        product.categoryIds.includes(categorySlug) &&
-        product.status === "active"
+    const categoryProducts =
+      products.filter(
+        (p) =>
+          p.categoryIds.includes(
+            categorySlug
+          ) &&
+          p.status === "active"
+      )
+
+    return paginate(
+      categoryProducts,
+      pagination
     )
-
-    return paginate(categoryProducts, pagination)
   },
 
-  async search(query, pagination) {
-    const products = await fetchProducts()
+  async search(
+    query,
+    pagination
+  ) {
+    const products =
+      await fetchProducts()
 
-    const filtered = applyFilters(products, {
-      search: query,
-    })
+    const filtered =
+      applyFilters(
+        products,
+        { search: query }
+      )
 
-    return paginate(filtered, pagination)
+    return paginate(
+      filtered,
+      pagination
+    )
   },
 }
-```
