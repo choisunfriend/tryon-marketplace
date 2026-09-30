@@ -156,3 +156,4 @@ This starter is free and open source. If you need help customizing it or buildin
 ## License
 
 MIT — free for personal and commercial use.
+
