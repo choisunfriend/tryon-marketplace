@@ -37,6 +37,15 @@ interface ApiProduct {
   model_path?: string | null
   created_at?: string | null
   updated_at?: string | null
+  // 확장 컬럼 — Worker가 이미 돌려준다(값이 없으면 null).
+  // D1 JSON 컬럼은 문자열로 올 수도, 객체로 올 수도 있어 둘 다 받는다.
+  product_code?: string | null
+  status?: string | null
+  subcategory?: string | null
+  image_url?: string | null
+  details?: unknown
+  media?: unknown
+  avatar?: unknown
 }
 
 interface ApiProductsResponse {
@@ -134,12 +143,106 @@ function normalizeSubcategory(
 }
 
 // ============================================================================
+// 확장 컬럼 읽기
+// ============================================================================
+
+type Loose = Record<string, unknown>
+
+function parseLoose(value: unknown): Loose | null {
+  if (!value) return null
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value)
+      return parsed && typeof parsed === "object" ? (parsed as Loose) : null
+    } catch {
+      return null
+    }
+  }
+  return typeof value === "object" ? (value as Loose) : null
+}
+
+function str(value: unknown): string {
+  return typeof value === "string" ? value.trim() : ""
+}
+
+const BODY_PARTS: ProductBodyPart[] = [
+  "upper_body",
+  "lower_body",
+  "outer",
+  "full_body",
+]
+
+function readBodyPart(value: unknown): ProductBodyPart | null {
+  const v = str(value) as ProductBodyPart
+  return BODY_PARTS.includes(v) ? v : null
+}
+
+function readStatus(value: unknown): Product["status"] {
+  const v = str(value)
+  return v === "draft" || v === "archived" ? v : "active"
+}
+
+const EMPTY_DETAILS: Product["details"] = {
+  material: "",
+  color: "",
+  size: "",
+  fit: "",
+  texture: "",
+  stretch: "",
+  transparency: "",
+  thickness: "",
+  season: "",
+  manufacturer: "",
+  country_of_origin: "",
+  manufacturing_date: "",
+  care_instructions: "",
+  quality_assurance: "",
+  after_sales_service: "",
+  size_info: "",
+  measurements: "",
+}
+
+function readDetails(value: unknown): Product["details"] {
+  const raw = parseLoose(value)
+  if (!raw) return { ...EMPTY_DETAILS }
+  const out = { ...EMPTY_DETAILS }
+  for (const key of Object.keys(out) as (keyof Product["details"])[]) {
+    out[key] = str(raw[key])
+  }
+  return out
+}
+
+// ============================================================================
 // Images
 // ============================================================================
 
 function createImage(
   product: ApiProduct
 ): ProductImage[] {
+  // 1) media.images  2) image_url  3) placeholder
+  const media = parseLoose(product.media)
+  const list = Array.isArray(media?.images) ? media.images : []
+  const images: ProductImage[] = []
+  list.forEach((item, i) => {
+    const img = parseLoose(item)
+    const url = str(img?.url)
+    if (!url) return
+    images.push({
+      id: `${product.id}-image-${i}`,
+      url,
+      alt: str(img?.alt) || product.name,
+      type: str(img?.type) === "detail" ? "detail" : "main",
+    })
+  })
+  if (images.length) {
+    // 대표(main)를 맨 앞으로
+    images.sort((a, b) => (a.type === "main" ? 0 : 1) - (b.type === "main" ? 0 : 1))
+    return images
+  }
+  const imageUrl = str(product.image_url)
+  if (imageUrl) {
+    return [{ id: `${product.id}-image`, url: imageUrl, alt: product.name, type: "main" }]
+  }
   return [
     {
       id: `${product.id}-image`,
@@ -197,20 +300,34 @@ function mapApiProduct(
     product.updated_at ??
     createdAt
 
+  const avatarRaw =
+    parseLoose(product.avatar)
+
+  const mediaRaw =
+    parseLoose(product.media)
+
+  // 앱이 쓰는 3가지: 성별 · 착용 부위 · 3D 파일
+  // 저장된 값이 있으면 그대로, 없으면(예전 상품) 추측으로 폴백
   const gender =
-    normalizeGender(product.gender)
+    normalizeGender(str(avatarRaw?.gender) || product.gender)
 
   const category =
     normalizeCategory(product.category)
 
   const subcategory =
+    str(product.subcategory) ||
     normalizeSubcategory(product.category)
+
+  const bodyPart =
+    readBodyPart(avatarRaw?.body_part) ??
+    normalizeBodyPart(product.subcategory || product.category)
 
   const images =
     createImage(product)
 
   const modelFile =
-    product.model_path ?? ""
+    str(mediaRaw?.model_file) ||
+    (product.model_path ?? "")
 
   const variant =
     createVariant(product)
@@ -231,9 +348,11 @@ function mapApiProduct(
 
     gender,
 
-    product_code: product.id,
+    product_code:
+      str(product.product_code) || product.id,
 
-    status: "active",
+    status:
+      readStatus(product.status),
 
     // ------------------------------------------------------------------------
     // 분류
@@ -253,33 +372,11 @@ function mapApiProduct(
       product.currency ?? "USD",
 
     // ------------------------------------------------------------------------
-    // 상세정보
+    // 상세정보 (Worker의 details 컬럼, 없으면 빈 값)
     // ------------------------------------------------------------------------
-    // 현재 Worker에 해당 필드가 없기 때문에
-    // 빈 값으로 준비한다.
-    // 이후 DB/API가 확장되면 이 부분에서 그대로 연결한다.
 
-    details: {
-      material: "",
-      color: "",
-      size: "",
-      fit: "",
-      texture: "",
-      stretch: "",
-      transparency: "",
-      thickness: "",
-      season: "",
-
-      manufacturer: "",
-      country_of_origin: "",
-      manufacturing_date: "",
-      care_instructions: "",
-      quality_assurance: "",
-      after_sales_service: "",
-
-      size_info: "",
-      measurements: "",
-    },
+    details:
+      readDetails(product.details),
 
     // ------------------------------------------------------------------------
     // Media
@@ -300,9 +397,10 @@ function mapApiProduct(
       gender,
 
       body_part:
-        normalizeBodyPart(product.category),
+        bodyPart,
 
-      size_compatibility: "",
+      size_compatibility:
+        str(avatarRaw?.size_compatibility),
     },
 
     // ------------------------------------------------------------------------
@@ -362,8 +460,7 @@ function mapApiProduct(
 
       gender,
 
-      bodyPart:
-        normalizeBodyPart(product.category),
+      bodyPart,
     },
   }
 }
