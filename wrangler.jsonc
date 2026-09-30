@@ -20,5 +20,12 @@
       "service": "tryon-marketplace-web"
     }
   ],
+  // 상품 이미지·3D 파일 저장소 — 관리자 업로드(/api/assets/upload)와 파일 제공(/api/assets/...)에 씁니다
+  "r2_buckets": [
+    {
+      "binding": "ASSETS_BUCKET",
+      "bucket_name": "tryon-marketplace-assets"
+    }
+  ],
   "observability": { "enabled": true }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useEffect, useState } from "react"
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -52,9 +52,109 @@ const categories = [
   },
 ]
 
+
+// ============================================================================
+// 파일 업로드 필드 — 파일을 고르면 /api/assets/upload 로 R2에 올리고
+// 돌려받은 값을 입력칸에 채운다. 입력칸에 주소를 직접 적어도 된다.
+//   image → "/api/assets/products/{folder}/images/..." (스토어가 바로 보여줌)
+//   model → "products/{folder}/model/..." (R2 키 — 기존 model_path 규칙 그대로)
+// ============================================================================
+
+function UploadField({
+  name,
+  label,
+  kind,
+  folder,
+  accept,
+  placeholder,
+  resetSignal,
+}: {
+  name: string
+  label: string
+  kind: "image" | "model"
+  folder: string
+  accept: string
+  placeholder?: string
+  resetSignal: number
+}) {
+  const [value, setValue] = useState("")
+  const [status, setStatus] = useState("")
+
+  useEffect(() => {
+    setValue("")
+    setStatus("")
+  }, [resetSignal])
+
+  async function handleFile(file: File | undefined) {
+    if (!file || !folder) return
+    setStatus("업로드 중…")
+    try {
+      const body = new FormData()
+      body.append("file", file)
+      body.append("kind", kind)
+      body.append("folder", folder)
+      const response = await fetch("/api/assets/upload", {
+        method: "POST",
+        body,
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "업로드 실패")
+      }
+      setValue(kind === "image" ? data.url : data.key)
+      setStatus(`올림 · ${(file.size / 1024).toFixed(0)}KB`)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "업로드 실패")
+    }
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium">
+        {label}
+      </label>
+      <input
+        name={name}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded border p-2"
+      />
+      <div className="mt-1 flex items-center gap-2">
+        <input
+          type="file"
+          accept={accept}
+          disabled={!folder}
+          onChange={(e) => {
+            void handleFile(e.target.files?.[0])
+            e.target.value = ""
+          }}
+          className="text-xs"
+        />
+        {status && (
+          <span className="text-xs text-muted-foreground">{status}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function newUploadFolder(): string {
+  const rand = Math.random().toString(36).slice(2, 8)
+  return `p-${Date.now().toString(36)}-${rand}`
+}
+
 export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+
+  // 이번 상품 파일을 모을 R2 폴더 (products/{folder}/...) — 저장 후 새로 뽑음
+  const [uploadFolder, setUploadFolder] = useState("")
+  const [resetSignal, setResetSignal] = useState(0)
+
+  useEffect(() => {
+    setUploadFolder(newUploadFolder())
+  }, [resetSignal])
 
   const [category, setCategory] = useState("clothing")
   const [subcategory, setSubcategory] = useState("")
@@ -72,8 +172,10 @@ export default function AdminProductsPage() {
     setSaving(true)
     setMessage("")
 
+    const formElement = event.currentTarget
+
     const form =
-      new FormData(event.currentTarget)
+      new FormData(formElement)
 
     const payload = {
       // ======================================================================
@@ -358,7 +460,8 @@ export default function AdminProductsPage() {
         )
       }
 
-      event.currentTarget.reset()
+      formElement.reset()
+      setResetSignal((n) => n + 1)
 
       setCategory("clothing")
       setSubcategory("")
@@ -911,54 +1014,50 @@ export default function AdminProductsPage() {
             Images
           </h2>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Main Image URL
-            </label>
+          <p className="text-xs text-muted-foreground">
+            파일 저장 위치: R2 tryon-marketplace-assets / products/{uploadFolder || "…"}/
+          </p>
 
-            <input
-              name="main_image"
-              type="url"
-              className="w-full rounded border p-2"
-            />
-          </div>
+          <UploadField
+            name="main_image"
+            label="Main Image"
+            kind="image"
+            folder={uploadFolder}
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            placeholder="파일을 고르거나 https:// 주소 입력"
+            resetSignal={resetSignal}
+          />
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Detail Image 1
-              </label>
+            <UploadField
+            name="detail_image_1"
+            label="Detail Image 1"
+            kind="image"
+            folder={uploadFolder}
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            
+            resetSignal={resetSignal}
+          />
 
-              <input
-                name="detail_image_1"
-                type="url"
-                className="w-full rounded border p-2"
-              />
-            </div>
+            <UploadField
+            name="detail_image_2"
+            label="Detail Image 2"
+            kind="image"
+            folder={uploadFolder}
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            
+            resetSignal={resetSignal}
+          />
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Detail Image 2
-              </label>
-
-              <input
-                name="detail_image_2"
-                type="url"
-                className="w-full rounded border p-2"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Detail Image 3
-              </label>
-
-              <input
-                name="detail_image_3"
-                type="url"
-                className="w-full rounded border p-2"
-              />
-            </div>
+            <UploadField
+            name="detail_image_3"
+            label="Detail Image 3"
+            kind="image"
+            folder={uploadFolder}
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            
+            resetSignal={resetSignal}
+          />
           </div>
         </section>
 
@@ -971,17 +1070,15 @@ export default function AdminProductsPage() {
             3D / Avatar
           </h2>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Model File
-            </label>
-
-            <input
-              name="model_file"
-              className="w-full rounded border p-2"
-              placeholder="models/jacket.glb"
-            />
-          </div>
+          <UploadField
+            name="model_file"
+            label="Model File (.obj / .glb)"
+            kind="model"
+            folder={uploadFolder}
+            accept=".obj,.mtl,.glb,.gltf"
+            placeholder="파일을 고르거나 R2 경로 입력"
+            resetSignal={resetSignal}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
