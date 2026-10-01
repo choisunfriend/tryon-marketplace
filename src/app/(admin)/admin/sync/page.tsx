@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 
 // ============================================================================
 // R2 동기화 — R2에는 파일이 있는데 DB(상품 목록)에는 없는 폴더를 찾아 등록
@@ -334,6 +335,11 @@ export default function AdminSyncPage() {
                 >
                   {d.state === "saving" ? "저장 중…" : d.state === "done" ? "등록됨" : "등록"}
                 </button>
+                {d.state === "done" && d.model && /\.obj$/i.test(d.model) && (
+                  <Link href="/admin/bake" className="text-xs underline">
+                    3D 굽기 →
+                  </Link>
+                )}
                 {d.message && (
                   <p
                     className={`text-right text-xs ${
