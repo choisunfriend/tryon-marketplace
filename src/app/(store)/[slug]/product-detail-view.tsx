@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ShoppingBag, Heart } from "lucide-react"
+import { ShoppingBag, Heart, Shirt } from "lucide-react"
 import { toast } from "sonner"
 import { useCartStore } from "@/store/cart"
 import { useWishlistStore } from "@/store/wishlist"
@@ -57,6 +57,40 @@ export function ProductDetailView({
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // GYEOL 앱 iframe 안에서 열렸을 때만 "입어보기" 버튼을 보여 줍니다.
+  // 누르면 부모(GYEOL)에 gyeol-wear 메시지를 보내고, 앱이 3D 몸에 옷을 입힙니다.
+  const [inGyeol, setInGyeol] = useState(false)
+  useEffect(() => {
+    try {
+      setInGyeol(window.parent !== window)
+    } catch {
+      setInGyeol(true)
+    }
+  }, [])
+  const modelFile = product.media?.model_file || product.model3d?.modelPath || ""
+  const canTryOn = inGyeol && /\.obj(\?|#|$)/i.test(modelFile)
+  const handleTryOn = () => {
+    window.parent.postMessage(
+      {
+        type: "gyeol-wear",
+        id: product.id,
+        // GYEOL 앱의 어댑터(_fromMarketplace)가 이 형태를 그대로 읽습니다
+        item: {
+          id: product.id,
+          name: product.name,
+          gender: product.avatar?.gender ?? product.gender,
+          price: product.price,
+          currency: product.currency,
+          status: product.status,
+          media: { model_file: new URL(modelFile, window.location.origin).href },
+          avatar: { gender: product.avatar?.gender, body_part: product.avatar?.body_part },
+        },
+      },
+      "*"
+    )
+    toast.success("GYEOL에서 입혀 보는 중…")
+  }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
 
   // Track recently viewed
@@ -262,6 +296,17 @@ export function ProductDetailView({
               <ShoppingBag className="mr-2 h-4 w-4" />
               {inStock ? "Add to Cart" : "Out of Stock"}
             </Button>
+            {canTryOn && (
+              <Button
+                size="lg"
+                variant="secondary"
+                className="w-full sm:flex-1"
+                onClick={handleTryOn}
+              >
+                <Shirt className="mr-2 h-4 w-4" />
+                입어보기
+              </Button>
+            )}
           </div>
 
           {!inStock && (
