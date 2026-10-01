@@ -469,7 +469,26 @@ function mapApiProduct(
 // Fetch Products
 // ============================================================================
 
-async function fetchProducts(): Promise<Product[]> {
+// 같은 Worker 인스턴스 안에서는 60초 동안 상품 목록을 재사용합니다.
+// 한 페이지가 getBySlug·getFeatured·관련상품 등으로 여러 번 부르는데,
+// 매번 API를 다시 받고 변환하면 무료 플랜 CPU 한도(Error 1102)를 넘기 쉽습니다.
+const PRODUCTS_TTL_MS = 60_000
+let productsCache: { at: number; data: Promise<Product[]> } | null = null
+
+function fetchProducts(): Promise<Product[]> {
+  const now = Date.now()
+  if (productsCache && now - productsCache.at < PRODUCTS_TTL_MS) {
+    return productsCache.data
+  }
+  const data = fetchProductsFresh().catch((err) => {
+    productsCache = null // 실패는 캐시하지 않음
+    throw err
+  })
+  productsCache = { at: now, data }
+  return data
+}
+
+async function fetchProductsFresh(): Promise<Product[]> {
   const response = await fetch(
     PRODUCTS_API_URL,
     {
