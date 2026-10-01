@@ -8,6 +8,7 @@ import {
   bakeGarment,
   buildBody,
   parseObj,
+  serializeBinding,
   type BakeResult,
   type BodyFigure,
   type BodyGender,
@@ -245,6 +246,7 @@ export default function AdminBakePage() {
           folder: sel.folder,
           source: sel.source,
           results: Object.fromEntries(genders.map((g) => [g, results[g]!.text])),
+          binds: Object.fromEntries(genders.map((g) => [g, serializeBinding(results[g]!.binding)])),
           params: Object.fromEntries(
             genders.map((g) => [g, { kind: results[g]!.place.kind, scaleMul, yShift, clearance: effClearance }])
           ),
@@ -278,7 +280,8 @@ export default function AdminBakePage() {
       <h1 className="mb-2 text-2xl font-semibold">3D 굽기</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         상품의 3D 옷을 GYEOL 표준 몸에 맞춰 미리 구워 둡니다. 구운 옷은 앱에서 바로 입혀지고,
-        굽지 않은 옷은 앱이 매번 자동으로 맞춥니다(정확도가 떨어질 수 있음).
+        굽지 않은 옷은 앱이 매번 자동으로 맞춥니다(정확도가 떨어질 수 있음). 저장할 때 옷을 몸에 묶은
+        기록도 함께 남겨서, 나중에 손님 체형에 맞춰 옷이 따라가게 합니다.
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -441,7 +444,8 @@ export default function AdminBakePage() {
                   {r.place.rotatedZUp && " · Z-위 파일을 세움"}
                   {r.place.note && ` · ${r.place.note}`} · 몸을 뚫은 정점{" "}
                   {r.conform.insideBefore.toLocaleString()} → {r.conform.insideAfter.toLocaleString()}개
-                  (가장 깊이 {r.conform.worstBefore.toFixed(2)} → {r.conform.worstAfter.toFixed(3)})
+                  (가장 깊이 {r.conform.worstBefore.toFixed(2)} → {r.conform.worstAfter.toFixed(3)}) · 몸 묶음 기록{" "}
+                  {r.binding.count.toLocaleString()}정점 (되풀이 오차 {r.bindError < 1e-4 ? "없음" : r.bindError.toFixed(4)})
                 </p>
               )}
               <p className="text-xs text-muted-foreground">드래그로 돌리고, 휠로 확대합니다.</p>
