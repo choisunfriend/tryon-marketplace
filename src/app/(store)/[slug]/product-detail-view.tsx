@@ -58,7 +58,7 @@ export function ProductDetailView({
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  // GYEOL 앱 iframe 안에서 열렸을 때만 "입어보기" 버튼을 보여 줍니다.
+  // GYEOL 앱 iframe 안에서 열렸을 때만 "Try on" 버튼을 보여 줍니다.
   // 누르면 부모(GYEOL)에 gyeol-wear 메시지를 보내고, 앱이 3D 몸에 옷을 입힙니다.
   const [inGyeol, setInGyeol] = useState(false)
   useEffect(() => {
@@ -89,7 +89,7 @@ export function ProductDetailView({
       },
       "*"
     )
-    toast.success("GYEOL에서 입혀 보는 중…")
+    toast.success("Trying it on in GYEOL…")
   }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
 
@@ -304,7 +304,7 @@ export function ProductDetailView({
                 onClick={handleTryOn}
               >
                 <Shirt className="mr-2 h-4 w-4" />
-                입어보기
+                Try on
               </Button>
             )}
           </div>
