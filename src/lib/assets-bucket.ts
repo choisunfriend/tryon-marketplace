@@ -12,8 +12,15 @@ export interface AssetObject {
   httpMetadata?: { contentType?: string }
 }
 
+export interface AssetListResult {
+  objects: { key: string; size: number; uploaded?: Date }[]
+  truncated: boolean
+  cursor?: string
+}
+
 export interface AssetsBucket {
   get(key: string): Promise<AssetObject | null>
+  list(options?: { prefix?: string; cursor?: string; limit?: number }): Promise<AssetListResult>
   put(
     key: string,
     value: ArrayBuffer | ReadableStream,
