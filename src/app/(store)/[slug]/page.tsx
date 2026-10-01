@@ -12,10 +12,9 @@ interface SlugPageProps {
   params: Promise<{ slug: string }>
 }
 
-// Only render slugs returned by generateStaticParams — any other slug
-// automatically gets a proper 404 response. Rebuild/redeploy to pick
-// up new products, categories, or brands.
-export const dynamicParams = false
+// 관리자 화면에서 새로 등록한 상품도 다시 배포하지 않고 바로 열리도록
+// 빌드 때 없던 주소도 요청 시점에 그립니다(없는 상품이면 notFound()로 404).
+export const dynamicParams = true
 
 export async function generateStaticParams() {
   const productSlugs = data.products
