@@ -12,15 +12,20 @@ export async function GET(
   const { key: parts } = await params
   const key = (parts ?? []).map((p) => decodeURIComponent(p)).join("/")
 
-  if (!key || key.includes("..")) {
-    return new Response("Not Found", { status: 404 })
-  }
+  // 404 에도 CORS 헤더를 붙여야 다른 사이트(GYEOL)에서 "없음"을 정상적으로 알아챕니다
+  const notFound = () =>
+    new Response("Not Found", {
+      status: 404,
+      headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache" },
+    })
+
+  if (!key || key.includes("..")) return notFound()
 
   const bucket = await getAssetsBucket()
   if (!bucket) return new Response("R2 binding missing", { status: 500 })
 
   const object = await bucket.get(key)
-  if (!object) return new Response("Not Found", { status: 404 })
+  if (!object) return notFound()
 
   return new Response(object.body, {
     headers: {
@@ -28,7 +33,8 @@ export async function GET(
         object.httpMetadata?.contentType ?? "application/octet-stream",
       "Content-Length": String(object.size),
       ETag: object.etag,
-      "Cache-Control": "public, max-age=3600",
+      // fitted.json 은 다시 구우면 바로 바뀌어야 하므로 캐시하지 않음
+      "Cache-Control": key.endsWith("/fitted.json") ? "no-cache" : "public, max-age=3600",
       "Access-Control-Allow-Origin": "*",
     },
   })
