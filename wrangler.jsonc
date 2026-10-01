@@ -27,5 +27,10 @@
       "bucket_name": "tryon-marketplace-assets"
     }
   ],
+  // GYEOL 앱처럼 이 마켓플레이스를 iframe으로 띄울 수 있는 주소들 (공백으로 구분)
+  // src/middleware.ts 의 CSP frame-ancestors 에 들어갑니다
+  "vars": {
+    "FRAME_ANCESTORS": "https://*.choisunfriend.workers.dev https://choisunfriend.github.io"
+  },
   "observability": { "enabled": true }
 }
