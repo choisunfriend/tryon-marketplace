@@ -2,10 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react"
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "https://tryon-marketplace.choisunfriend.workers.dev"
-
 const categories = [
   {
     value: "clothing",
@@ -433,7 +429,8 @@ export default function AdminProductsPage() {
     try {
       const response =
         await fetch(
-          `${API_BASE_URL}/api/products`,
+          // 관리자 프록시를 거쳐 백엔드에 등록 (백엔드 토큰은 서버에만 있음)
+          "/api/admin/products",
           {
             method: "POST",
             headers: {

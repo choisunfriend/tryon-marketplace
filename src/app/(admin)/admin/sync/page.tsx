@@ -150,7 +150,8 @@ export default function AdminSyncPage() {
       featured: false,
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/api/products`, {
+      // 관리자 프록시를 거쳐 백엔드에 등록 (백엔드 토큰은 서버에만 있음)
+      const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

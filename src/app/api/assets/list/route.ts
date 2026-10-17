@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/security"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
 
 // ============================================================================
@@ -14,7 +15,10 @@ interface FolderInfo {
   uploaded: string | null
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ success: false, error: "관리자 로그인이 필요합니다" }, { status: 401 })
+  }
   const bucket = await getAssetsBucket()
   if (!bucket) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
+import { isAdminRequest, isSameOriginWrite } from "@/lib/security"
 
 // ============================================================================
 // 관리자 파일 업로드 → R2
@@ -37,6 +38,35 @@ const TYPES: Record<string, string> = {
   gltf: "model/gltf+json",
 }
 
+// 확장자만 바꾼 다른 파일(HTML·스크립트 등)이 올라가지 않게 앞부분 바이트로 확인
+function looksLike(ext: string, head: Uint8Array): boolean {
+  const at = (sig: number[], off = 0) => sig.every((b, i) => head[off + i] === b)
+  switch (ext) {
+    case "jpg":
+    case "jpeg":
+      return at([0xff, 0xd8, 0xff])
+    case "png":
+      return at([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    case "gif":
+      return at([0x47, 0x49, 0x46, 0x38])
+    case "webp":
+      return at([0x52, 0x49, 0x46, 0x46]) && at([0x57, 0x45, 0x42, 0x50], 8)
+    case "glb":
+      return at([0x67, 0x6c, 0x54, 0x46]) // "glTF"
+    case "obj":
+    case "mtl":
+    case "gltf": {
+      // 텍스트 파일: NUL 바이트가 없고 HTML/스크립트 태그로 시작하지 않아야 함
+      if (head.includes(0)) return false
+      const text = new TextDecoder().decode(head).trimStart().toLowerCase()
+      if (/^<(!doctype|html|script|svg|\?xml)/.test(text)) return false
+      return ext !== "gltf" || text.startsWith("{")
+    }
+    default:
+      return false
+  }
+}
+
 function fail(error: string, status = 400) {
   return NextResponse.json({ success: false, error }, { status })
 }
@@ -54,6 +84,9 @@ function safeName(name: string, ext: string): string {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
+  if (!isSameOriginWrite(request)) return fail("허용되지 않은 요청 출처입니다", 403)
+
   const bucket = await getAssetsBucket()
   if (!bucket) {
     return fail("R2 바인딩(ASSETS_BUCKET)이 없습니다 — wrangler.jsonc 확인", 500)
@@ -83,8 +116,13 @@ export async function POST(request: Request) {
     return fail(`파일이 너무 큽니다 (최대 ${rule.maxBytes / 1024 / 1024}MB)`)
   }
 
+  const data = await file.arrayBuffer()
+  if (!looksLike(ext, new Uint8Array(data.slice(0, 512)))) {
+    return fail("파일 내용이 확장자와 맞지 않습니다")
+  }
+
   const key = `products/${folder}/${rule.dir}/${safeName(file.name, ext)}`
-  await bucket.put(key, await file.arrayBuffer(), {
+  await bucket.put(key, data, {
     httpMetadata: { contentType: TYPES[ext] ?? "application/octet-stream" },
   })
 

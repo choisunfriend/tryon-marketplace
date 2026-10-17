@@ -28,6 +28,7 @@ import { ProductGrid } from "@/components/products/product-grid"
 import { formatPrice } from "@/lib/utils"
 import { breadcrumbJsonLd } from "@/lib/structured-data"
 import type { Product, Brand, Category } from "@/types"
+import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
 
 interface ProductDetailViewProps {
   product: Product
@@ -62,16 +63,21 @@ export function ProductDetailView({
   // 누르면 부모(GYEOL)에 gyeol-wear 메시지를 보내고, 앱이 3D 몸에 옷을 입힙니다.
   const [inGyeol, setInGyeol] = useState(false)
   useEffect(() => {
-    try {
-      setInGyeol(window.parent !== window)
-    } catch {
-      setInGyeol(true)
+    // 허용된 GYEOL 앱 origin 이 부모일 때만 Try on 을 켭니다
+    const update = () => setInGyeol(parentAppOrigin() !== null)
+    update()
+    const stop = listenForAppHello()
+    const t = setTimeout(update, 800) // gyeol-hello 를 받은 뒤 다시 확인
+    return () => {
+      stop()
+      clearTimeout(t)
     }
   }, [])
   const modelFile = product.media?.model_file || product.model3d?.modelPath || ""
   const canTryOn = inGyeol && /\.obj(\?|#|$)/i.test(modelFile)
   const handleTryOn = () => {
-    window.parent.postMessage(
+    // 부모가 허용된 GYEOL 앱일 때 그 origin 으로만 보냄 ("*" 금지)
+    const sent = postToApp(
       {
         type: "gyeol-wear",
         id: product.id,
@@ -86,10 +92,10 @@ export function ProductDetailView({
           media: { model_file: new URL(modelFile, window.location.origin).href },
           avatar: { gender: product.avatar?.gender, body_part: product.avatar?.body_part },
         },
-      },
-      "*"
+      }
     )
-    toast.success("Trying it on in GYEOL…")
+    if (sent) toast.success("Trying it on in GYEOL…")
+    else toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
   }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
 
