@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAssetsBucket } from "@/lib/assets-bucket"
+import { isAdminRequest, isSameOriginWrite } from "@/lib/security"
 
 // ============================================================================
 // 3D 굽기 저장 — POST /api/bake
@@ -31,6 +32,12 @@ function fail(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  // (2026-10-17 보안 1차) 예전엔 아무나 R2 에 파일을 쓰고 앱이 읽는 fitted.json 을 덮어쓸 수 있었습니다
+  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
+  if (!isSameOriginWrite(request)) return fail("허용되지 않은 요청 출처입니다", 403)
+  const len = Number(request.headers.get("content-length") ?? "0")
+  if (len > 2 * MAX_BYTES + 1024 * 1024) return fail("요청이 너무 큽니다", 413)
+
   const bucket = await getAssetsBucket()
   if (!bucket) return fail("R2 바인딩(ASSETS_BUCKET)이 없습니다", 500)
 
