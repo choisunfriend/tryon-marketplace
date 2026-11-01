@@ -39,7 +39,7 @@ interface Style {
   currency: string | null
   duration_min: number | null
   thumbnail_url: string | null
-  spec: Record<string, unknown> & { color?: string }
+  color: string | null // 썸네일이 없을 때 견본 색 (스펙은 「입어 보기」 때 따로 받음)
 }
 
 interface SalonDetail extends SalonPin {
@@ -298,24 +298,42 @@ export function SalonMap() {
     }
   }
 
-  function tryOn(style: Style) {
+  // 「입어 보기」: 이 스타일 하나의 스펙만 저장소에서 받아 앱에 넘김 (미용실 화면은 이름·가격·썸네일만)
+  async function tryOn(style: Style) {
     if (!selected) return
+    if (parentAppOrigin() === null) {
+      toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
+      return
+    }
+    setTryingId(style.id)
+    let spec: Record<string, unknown>
+    try {
+      const r = await fetch(`/api/salons/styles/${encodeURIComponent(style.id)}`)
+      const d = await r.json()
+      if (!d.success) throw new Error(d.error)
+      spec = d.style.spec
+    } catch {
+      setTryingId(null)
+      toast.error("스타일을 불러오지 못했어요")
+      return
+    }
     const sent = postToApp({
       type: "gyeol-style",
       id: style.id,
       name: style.name,
       gender: style.gender,
       salon: { id: selected.salon.id, name: selected.salon.name },
-      spec: style.spec,
+      spec,
     })
     if (!sent) {
+      setTryingId(null)
       toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
       return
     }
-    setTryingId(style.id)
     toast("GYEOL 에서 스타일을 입히는 중…")
     setTimeout(() => setTryingId((cur) => (cur === style.id ? null : cur)), 15000)
   }
+
 
   const nearby = [...salons]
     .map((s) => ({ ...s, km: distanceKm(center, s) }))
@@ -415,7 +433,7 @@ export function SalonMap() {
                   ) : (
                     <span
                       className="h-14 w-14 shrink-0 rounded"
-                      style={{ background: typeof st.spec.color === "string" ? st.spec.color : "#6b5a4a" }}
+                      style={{ background: st.color && /^#[0-9A-Fa-f]{6}$/.test(st.color) ? st.color : "#6b5a4a" }}
                       aria-hidden
                     />
                   )}
@@ -428,7 +446,7 @@ export function SalonMap() {
                     </p>
                   </div>
                   {inGyeol && (
-                    <Button size="sm" onClick={() => tryOn(st)} disabled={tryingId === st.id}>
+                    <Button size="sm" onClick={() => void tryOn(st)} disabled={tryingId === st.id}>
                       {tryingId === st.id ? "입히는 중…" : "입어 보기"}
                     </Button>
                   )}

@@ -286,6 +286,7 @@ export async function salonsInBox(
   return r.results ?? []
 }
 
+// (2026-11-01) 미용실 화면에는 가벼운 정보(이름·가격·썸네일)만 — 스펙은 「입어 보기」 때 styleSpec() 으로 따로
 export interface PublicStyle {
   id: string
   name: string
@@ -294,7 +295,7 @@ export interface PublicStyle {
   currency: string | null
   duration_min: number | null
   thumbnail_url: string | null
-  spec: Record<string, unknown>
+  color: string | null // 썸네일이 없을 때 견본 색 (스펙의 color 만 뽑아 둠)
 }
 
 export async function publicSalonDetail(db: D1Database, id: string) {
@@ -309,20 +310,34 @@ export async function publicSalonDetail(db: D1Database, id: string) {
   if (!salon) return null
   const r = await db
     .prepare(
-      `SELECT id, name, gender, price_minor, currency, duration_min, thumbnail_url, spec
+      `SELECT id, name, gender, price_minor, currency, duration_min, thumbnail_url,
+              json_extract(spec, '$.color') AS color
          FROM salon_styles WHERE salon_id = ? AND status = 'active' ORDER BY sort, created_at`
     )
     .bind(id)
-    .all<Omit<PublicStyle, "spec"> & { spec: string }>()
-  const styles: PublicStyle[] = []
-  for (const row of r.results ?? []) {
-    try {
-      styles.push({ ...row, spec: JSON.parse(row.spec) })
-    } catch {
-      /* 깨진 스펙은 건너뜀 */
-    }
-  }
+    .all<PublicStyle>()
+  const styles = r.results ?? []
   return { salon, styles }
+}
+
+// 스타일 하나의 스펙 — 「입어 보기」를 누를 때만 받음 (영업 중인 입점사 · 보이는 미용실 · 보이는 스타일만)
+export async function publicStyleSpec(db: D1Database, styleId: string) {
+  const row = await db
+    .prepare(
+      `SELECT ss.id, ss.name, ss.gender, ss.spec, sa.id AS salon_id, sa.name AS salon_name
+         FROM salon_styles ss
+         JOIN salons sa ON sa.id = ss.salon_id
+         JOIN stores st ON st.id = sa.store_id
+        WHERE ss.id = ? AND ss.status = 'active' AND ${PUBLIC_SALON_WHERE}`
+    )
+    .bind(styleId)
+    .first<{ id: string; name: string; gender: StyleGender; spec: string; salon_id: string; salon_name: string }>()
+  if (!row) return null
+  try {
+    return { id: row.id, name: row.name, gender: row.gender, salon: { id: row.salon_id, name: row.salon_name }, spec: JSON.parse(row.spec) as Record<string, unknown> }
+  } catch {
+    return null
+  }
 }
 
 // ----------------------------------------------------------------------------
