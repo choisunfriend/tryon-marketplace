@@ -1,6 +1,6 @@
 "use client"
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
-import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 // ============================================================================
@@ -123,9 +123,9 @@ export default function AdminProductsListPage() {
           <button type="button" onClick={() => void load()} className="rounded border px-4 py-2 text-sm">
             새로고침
           </button>
-          <Link href="/admin/products/new" className="rounded bg-black px-4 py-2 text-sm text-white">
+          <a href="/admin/products/new" className="rounded bg-black px-4 py-2 text-sm text-white">
             + 새 상품
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -187,9 +187,9 @@ export default function AdminProductsListPage() {
                       )}
                     </td>
                     <td className="p-3">
-                      <Link href={`/admin/products/${encodeURIComponent(id)}`} className="font-medium hover:underline">
+                      <a href={`/admin/products/${encodeURIComponent(id)}`} className="font-medium hover:underline">
                         {str(p.name) || "(이름 없음)"}
-                      </Link>
+                      </a>
                       <div className="text-xs text-muted-foreground">
                         {[str(p.brand), str(p.product_code)].filter(Boolean).join(" · ")}
                       </div>
@@ -213,9 +213,9 @@ export default function AdminProductsListPage() {
                     <td className="p-3">{has3d ? "있음" : "-"}</td>
                     <td className="p-3 text-xs text-muted-foreground">{str(p.updated_at ?? p.created_at).slice(0, 10)}</td>
                     <td className="whitespace-nowrap p-3 text-right">
-                      <Link href={`/admin/products/${encodeURIComponent(id)}`} className="mr-2 rounded border px-3 py-1">
+                      <a href={`/admin/products/${encodeURIComponent(id)}`} className="mr-2 rounded border px-3 py-1">
                         수정
-                      </Link>
+                      </a>
                       <button
                         type="button"
                         disabled={busy === id}

@@ -1,6 +1,6 @@
 "use client"
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
-import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
@@ -56,24 +56,24 @@ export default function AdminDashboardPage() {
       <Card className="mt-8">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>최근 바뀐 상품</CardTitle>
-          <Link href="/admin/products" className="text-sm underline">
+          <a href="/admin/products" className="text-sm underline">
             전체 보기
-          </Link>
+          </a>
         </CardHeader>
         <CardContent>
           {!rows ? (
             <p className="text-sm text-muted-foreground">불러오는 중…</p>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              등록된 상품이 없습니다. <Link href="/admin/products/new" className="underline">새 상품 등록</Link>
+              등록된 상품이 없습니다. <a href="/admin/products/new" className="underline">새 상품 등록</a>
             </p>
           ) : (
             <ul className="divide-y text-sm">
               {rows.slice(0, 8).map((p) => (
                 <li key={String(p.id)} className="flex items-center justify-between py-2">
-                  <Link href={`/admin/products/${encodeURIComponent(String(p.id))}`} className="hover:underline">
+                  <a href={`/admin/products/${encodeURIComponent(String(p.id))}`} className="hover:underline">
                     {p.name || "(이름 없음)"}
-                  </Link>
+                  </a>
                   <span className="text-xs text-muted-foreground">
                     {p.status || "active"} · {String(p.updated_at ?? p.created_at ?? "").slice(0, 10)}
                   </span>

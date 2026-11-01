@@ -1,7 +1,7 @@
 "use client"
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { FormEvent, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 
 const categories = [
   {
@@ -213,7 +213,6 @@ function folderOf(vals: Record<string, string>): string {
 }
 
 export default function ProductForm({ product }: { product?: AdminProduct | null }) {
-  const router = useRouter()
   const editId = product?.id != null ? String(product.id) : ""
   const iv = initialValues(product)
   const pick = (k: string, d = "") => (iv[k] ? iv[k] : d)
@@ -545,8 +544,7 @@ export default function ProductForm({ product }: { product?: AdminProduct | null
 
       if (editId) {
         setMessage("수정했습니다.")
-        router.push("/admin/products")
-        router.refresh()
+        window.location.assign("/admin/products")
         return
       }
 
@@ -1306,7 +1304,7 @@ export default function ProductForm({ product }: { product?: AdminProduct | null
 
           <button
             type="button"
-            onClick={() => router.push("/admin/products")}
+            onClick={() => window.location.assign("/admin/products")}
             className="ml-3 rounded border px-6 py-3"
           >
             Cancel

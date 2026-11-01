@@ -1,6 +1,6 @@
 "use client"
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import ProductForm, { type AdminProduct } from "@/components/admin/product-form"
@@ -31,9 +31,9 @@ export default function AdminEditProductPage() {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <p className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>
-        <Link href="/admin/products" className="text-sm underline">
+        <a href="/admin/products" className="text-sm underline">
           목록으로
-        </Link>
+        </a>
       </div>
     )
   if (!product) return <p className="p-6 text-sm text-muted-foreground">불러오는 중…</p>
