@@ -33,8 +33,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "REPLACE_WITH_D1_DATABASE_NAME",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_name": "tryon-marketplace-db",
+      "database_id": "b58dc994-58db-4024-a2ff-97da2d0bb060"
     }
   ],
   // GYEOL 앱 주소(공백 구분, https 만 · 와일드카드 안 됨) — 매장 iframe 허용(frame-ancestors)과 3D 파일 CORS 에 씁니다
