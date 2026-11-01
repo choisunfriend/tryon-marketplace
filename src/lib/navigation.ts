@@ -14,6 +14,8 @@ export interface NavSection {
 export const shopLinks: NavItem[] = [
   { name: "Clothing", href: "/clothing" },
   { name: "Accessories", href: "/accessories" },
+  // (2026-11-01) 미용실 세계 지도 — 헤어스타일 3D 입어 보기
+  { name: "Salons", href: "/salons" },
 ]
 
 export const accountLinks: NavItem[] = [

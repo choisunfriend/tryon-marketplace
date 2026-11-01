@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { ADMIN_COOKIE, appOrigins, verifyAdminSession } from "@/lib/security"
+import { mapOrigins } from "@/lib/map"
 
 // ============================================================================
 // 마켓플레이스 접근 규칙 (2026-10-17 보안 1차)
@@ -48,7 +49,8 @@ function securityHeaders(response: NextResponse, admin: boolean, turnstile = fal
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+  // (2026-11-01) geolocation=(self): 미용실 지도의 "내 위치" (앱 iframe 에 allow="geolocation" 도 있어야 함)
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(), usb=()")
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin")
   if (admin) {
     response.headers.set("X-Frame-Options", "DENY")
@@ -64,7 +66,10 @@ function securityHeaders(response: NextResponse, admin: boolean, turnstile = fal
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
-    `connect-src 'self' ${BACKEND_ORIGIN}`,
+    // (2026-11-01) 지도 타일·글꼴·주소 검색 서버 (src/lib/map.ts)
+    `connect-src 'self' ${BACKEND_ORIGIN} ${mapOrigins().join(" ")}`,
+    // (2026-11-01) MapLibre 는 지도 계산을 blob: 워커에서 함
+    "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

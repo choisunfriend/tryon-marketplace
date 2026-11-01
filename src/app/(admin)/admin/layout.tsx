@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { useEffect, useState } from "react"
-import { LayoutDashboard, Package, Users, RefreshCw, Shirt, LogOut, Store, Wallet } from "lucide-react"
+import { LayoutDashboard, Package, Users, RefreshCw, Shirt, LogOut, Store, Wallet, Scissors } from "lucide-react"
 
 // (2026-11-01) 메뉴는 Next <Link>(화면 안 이동) 대신 일반 <a>(페이지 새로 열기) — Cloudflare 배포에서 눌러도 반응 없는 문제를 피함.
 //   좁은 화면(폰)에서는 왼쪽 메뉴가 숨어 있어 위쪽 가로 메뉴를 따로 둠.
@@ -18,6 +18,7 @@ const adminNav = [
   { name: "정산", href: "/admin/settlements", icon: Wallet },
   { name: "R2 동기화", href: "/admin/sync", icon: RefreshCw, platform: true },
   { name: "3D 굽기", href: "/admin/bake", icon: Shirt },
+  { name: "미용실", href: "/admin/salons", icon: Scissors }, // (2026-11-01) 미용실 지도·헤어스타일
   { name: "Customers", href: "/admin/customers", icon: Users },
 ]
 
