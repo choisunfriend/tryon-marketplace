@@ -27,6 +27,16 @@
       "bucket_name": "tryon-marketplace-assets"
     }
   ],
+  // (2026-11-01) 상품 D1 — 백엔드 API Worker(tryon-marketplace)가 쓰는 것과 같은 데이터베이스.
+  // 관리자 화면의 목록·등록·수정·삭제가 여기서 바로 읽고 씁니다(src/lib/products-db.ts).
+  // ⚠ database_name · database_id 를 대시보드 → Storage & Databases → D1 에서 확인해 바꿔 넣으세요(지금 값은 자리표시).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "REPLACE_WITH_D1_DATABASE_NAME",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
   // GYEOL 앱 주소(공백 구분, https 만 · 와일드카드 안 됨) — 매장 iframe 허용(frame-ancestors)과 3D 파일 CORS 에 씁니다
   // (2026-10-17 보안 1차: *.choisunfriend.workers.dev 와일드카드 제거)
   "vars": {
