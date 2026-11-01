@@ -1,32 +1,26 @@
 import { NextResponse } from "next/server"
-import { isAdminRequest, isSameOriginWrite } from "@/lib/security"
-import { createProduct, getProductsDb, listProducts, MAX_PRODUCT_BODY } from "@/lib/products-db"
+import { fail, noStore, requireAdmin } from "@/lib/admin-guard"
+import { createProduct, listProducts, MAX_PRODUCT_BODY } from "@/lib/products-db"
 
 // ============================================================================
-// 관리자 상품 — GET 목록 · POST 등록
+// 관리자 상품 — GET 목록 · POST 등록 (D1 직접)
 // ============================================================================
-// (2026-11-01) D1(DB 바인딩)을 직접 읽고 씁니다 — 목록에는 draft·archived 도 다 보임.
-// DB 바인딩이 없으면 POST 만 예전처럼 백엔드 Worker 로 넘깁니다(BACKEND_ADMIN_TOKEN).
+// (2026-11-01) 마켓플레이스
+//   · 입점사 계정: 자기 입점사 상품만 보이고, 등록하면 store_id 가 자기 입점사로 고정
+//   · platform: 전부 보임(?store=ID 로 거르기), 등록 때 body.store_id 로 입점사 지정(없으면 default)
+// (예전의 "D1 없으면 백엔드 Worker 로 넘김" 경로는 입점사 구분을 못 해서 뺐습니다)
 // ============================================================================
 
-const noStore = { "Cache-Control": "no-store" }
-
-function fail(error: string, status: number) {
-  return NextResponse.json({ success: false, error }, { status, headers: noStore })
-}
-
-function backendBase() {
-  return (
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://tryon-marketplace.choisunfriend.workers.dev"
-  ).replace(/\/+$/, "")
-}
+const STORE_ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
-  const db = await getProductsDb()
-  if (!db) return fail("D1 바인딩(DB)이 없습니다 — wrangler.jsonc 의 d1_databases 를 확인하세요", 503)
+  const g = await requireAdmin(request)
+  if ("err" in g) return g.err
+  const { session, db } = g
+  const q = new URL(request.url).searchParams.get("store")
+  const storeId = session.role === "platform" ? (q && STORE_ID_RE.test(q) ? q : null) : session.sid
   try {
-    const products = await listProducts(db)
+    const products = await listProducts(db, storeId)
     return NextResponse.json({ success: true, products }, { headers: noStore })
   } catch (e) {
     return fail(e instanceof Error ? e.message : "목록을 읽지 못했습니다", 500)
@@ -34,8 +28,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
-  if (!isSameOriginWrite(request)) return fail("허용되지 않은 요청 출처입니다", 403)
+  const g = await requireAdmin(request, { write: true })
+  if ("err" in g) return g.err
+  const { session, db } = g
 
   const text = await request.text()
   if (text.length > MAX_PRODUCT_BODY) return fail("요청이 너무 큽니다", 413)
@@ -47,26 +42,18 @@ export async function POST(request: Request) {
   }
   if (!body || typeof body !== "object" || !String(body.name ?? "").trim()) return fail("상품 이름이 필요합니다", 400)
 
-  const db = await getProductsDb()
-  if (db) {
-    try {
-      const product = await createProduct(db, body)
-      return NextResponse.json({ success: true, product }, { status: 201, headers: noStore })
-    } catch (e) {
-      return fail(e instanceof Error ? e.message : "등록하지 못했습니다", 500)
-    }
+  if (session.role === "platform") {
+    const sid = typeof body.store_id === "string" && STORE_ID_RE.test(body.store_id) ? body.store_id : "default"
+    if (!(await db.prepare(`SELECT 1 FROM stores WHERE id = ?`).bind(sid).first())) return fail("없는 입점사입니다", 400)
+    body.store_id = sid
+  } else {
+    body.store_id = session.sid // 입점사 계정은 다른 입점사로 못 넣음
   }
 
-  // D1 바인딩이 없을 때 — 예전 방식(백엔드 Worker 로 넘김)
-  const token = process.env.BACKEND_ADMIN_TOKEN
-  if (!token) return fail("D1 바인딩(DB)도 BACKEND_ADMIN_TOKEN 도 없습니다", 503)
-  const res = await fetch(`${backendBase()}/api/products`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: text,
-  })
-  return new Response(await res.text(), {
-    status: res.status,
-    headers: { "Content-Type": res.headers.get("content-type") ?? "application/json", ...noStore },
-  })
+  try {
+    const product = await createProduct(db, body)
+    return NextResponse.json({ success: true, product }, { status: 201, headers: noStore })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "등록하지 못했습니다", 500)
+  }
 }

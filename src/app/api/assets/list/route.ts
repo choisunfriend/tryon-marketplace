@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { isAdminRequest } from "@/lib/security"
+import { isPlatformRequest } from "@/lib/security"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
 
 // ============================================================================
@@ -16,8 +16,9 @@ interface FolderInfo {
 }
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ success: false, error: "관리자 로그인이 필요합니다" }, { status: 401 })
+  // (2026-11-01) 버킷 전체 폴더가 보이므로 플랫폼 운영자만
+  if (!(await isPlatformRequest(request))) {
+    return NextResponse.json({ success: false, error: "플랫폼 운영자만 볼 수 있습니다" }, { status: 403 })
   }
   const bucket = await getAssetsBucket()
   if (!bucket) {

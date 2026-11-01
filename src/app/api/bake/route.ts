@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAssetsBucket } from "@/lib/assets-bucket"
-import { isAdminRequest, isSameOriginWrite } from "@/lib/security"
+import { canUseFolder, requireAdmin } from "@/lib/admin-guard"
 
 // ============================================================================
 // 3D 굽기 저장 — POST /api/bake
@@ -33,8 +33,8 @@ function fail(error: string, status = 400) {
 
 export async function POST(request: Request) {
   // (2026-10-17 보안 1차) 예전엔 아무나 R2 에 파일을 쓰고 앱이 읽는 fitted.json 을 덮어쓸 수 있었습니다
-  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
-  if (!isSameOriginWrite(request)) return fail("허용되지 않은 요청 출처입니다", 403)
+  const g = await requireAdmin(request, { write: true })
+  if ("err" in g) return g.err
   const len = Number(request.headers.get("content-length") ?? "0")
   if (len > 2 * MAX_BYTES + 1024 * 1024) return fail("요청이 너무 큽니다", 413)
 
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
   const folder = String(body.folder ?? "")
   const source = String(body.source ?? "")
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(folder)) return fail("folder 이름이 올바르지 않습니다")
+  if (!(await canUseFolder(g.session, g.db, folder))) return fail("이 상품 폴더를 다룰 권한이 없습니다", 403)
   if (!source.startsWith(`products/${folder}/`) || source.includes("..")) {
     return fail("source 는 같은 상품 폴더의 파일이어야 합니다")
   }

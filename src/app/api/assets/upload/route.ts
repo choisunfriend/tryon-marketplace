@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
-import { isAdminRequest, isSameOriginWrite } from "@/lib/security"
+import { canUseFolder, requireAdmin } from "@/lib/admin-guard"
 
 // ============================================================================
 // 관리자 파일 업로드 → R2
@@ -84,8 +84,8 @@ function safeName(name: string, ext: string): string {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest(request))) return fail("관리자 로그인이 필요합니다", 401)
-  if (!isSameOriginWrite(request)) return fail("허용되지 않은 요청 출처입니다", 403)
+  const g = await requireAdmin(request, { write: true })
+  if ("err" in g) return g.err
 
   const bucket = await getAssetsBucket()
   if (!bucket) {
@@ -106,6 +106,8 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) return fail("file 이 없습니다")
   if (kind !== "image" && kind !== "model") return fail("kind 는 image 또는 model")
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(folder)) return fail("folder 이름이 올바르지 않습니다")
+  // (2026-11-01) 입점사는 자기 폴더에만 (남의 상품 파일 덮어쓰기 방지)
+  if (!(await canUseFolder(g.session, g.db, folder))) return fail("이 폴더에 올릴 권한이 없습니다", 403)
 
   const rule = RULES[kind]
   const ext = (file.name.split(".").pop() ?? "").toLowerCase()

@@ -98,14 +98,19 @@ function quote(name: string): string {
   return `"${name}"`
 }
 
-export async function listProducts(db: D1Database) {
+// storeId 를 주면 그 입점사 상품만 (입점사 관리자용)
+export async function listProducts(db: D1Database, storeId?: string | null) {
   const cols = await columnsOf(db)
   const order = cols.some((c) => c.name === "updated_at")
     ? "updated_at DESC"
     : cols.some((c) => c.name === "created_at")
       ? "created_at DESC"
       : "rowid DESC"
-  const r = await db.prepare(`SELECT * FROM ${PRODUCTS_TABLE} ORDER BY ${order}`).all()
+  const hasStore = cols.some((c) => c.name === "store_id")
+  if (storeId && !hasStore) throw new Error("products.store_id 컬럼이 없습니다 — migrations/0001_multi_store.sql 을 실행하세요")
+  const r = storeId
+    ? await db.prepare(`SELECT * FROM ${PRODUCTS_TABLE} WHERE store_id = ? ORDER BY ${order}`).bind(storeId).all()
+    : await db.prepare(`SELECT * FROM ${PRODUCTS_TABLE} ORDER BY ${order}`).all()
   return (r.results ?? []).map(fromDbRow)
 }
 
@@ -147,6 +152,24 @@ export async function updateProduct(db: D1Database, id: string, input: Record<st
 export async function deleteProduct(db: D1Database, id: string): Promise<boolean> {
   const r = await db.prepare(`DELETE FROM ${PRODUCTS_TABLE} WHERE id = ?`).bind(id).run()
   return (r.meta?.changes ?? 0) > 0
+}
+
+// (2026-11-01) R2 폴더 products/{folder}/ 를 이 입점사 상품이 이미 쓰고 있는지
+//   (입점사 계정이 "{slug}-" 로 시작하지 않는 예전 폴더에 파일을 올리거나 구울 때 확인)
+//   반대로 다른 입점사 상품이 쓰는 폴더면 false
+export async function folderOwner(db: D1Database, folder: string): Promise<string | null | "none"> {
+  const cols = await columnsOf(db)
+  const fileCols = cols
+    .map((c) => c.name)
+    .filter((n) => /image|model|media|file|path/i.test(n) && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n))
+  if (!fileCols.length || !cols.some((c) => c.name === "store_id")) return "none"
+  const like = `%products/${folder}/%`
+  const where = fileCols.map((n) => `CAST(${quote(n)} AS TEXT) LIKE ?`).join(" OR ")
+  const row = await db
+    .prepare(`SELECT store_id FROM ${PRODUCTS_TABLE} WHERE ${where} LIMIT 1`)
+    .bind(...fileCols.map(() => like))
+    .first<{ store_id: string | null }>()
+  return row ? row.store_id : "none"
 }
 
 // 관리자 화면 공용 — 같은 출처·관리자 쿠키 확인

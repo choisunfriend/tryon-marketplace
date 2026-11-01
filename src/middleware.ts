@@ -11,6 +11,7 @@ import { ADMIN_COOKIE, appOrigins, verifyAdminSession } from "@/lib/security"
 //    앱 주소(APP_ORIGINS, 기본 https://choisunfriend.github.io)만 허용합니다.
 //    ⚠ Sec-Fetch-Dest 를 안 보내는 아주 오래된 브라우저는 구분할 수 없어 통과시킵니다.
 // ② 관리자 화면(/admin…)은 서명된 관리자 쿠키가 있어야 열립니다(없으면 /admin-login).
+//    (2026-11-01) /admin/stores · /admin/sync 는 플랫폼 운영자만 (입점사 계정은 /admin 으로)
 //    관리자 화면은 어떤 사이트에도 iframe 으로 들어가지 못합니다(frame-ancestors 'none').
 // ③ API(/api/…)는 각 라우트가 직접 권한·출처를 확인합니다.
 // ============================================================================
@@ -19,6 +20,11 @@ const BACKEND_ORIGIN = "https://tryon-marketplace.choisunfriend.workers.dev"
 
 function isAdminPath(p: string) {
   return p === "/admin" || p.startsWith("/admin/") || p === "/admin-login"
+}
+
+// (2026-11-01) 플랫폼 운영자만 여는 관리자 화면
+function isPlatformOnlyPath(p: string) {
+  return p === "/admin/stores" || p.startsWith("/admin/stores/") || p === "/admin/sync" || p.startsWith("/admin/sync/")
 }
 
 function blockedPage(): NextResponse {
@@ -38,7 +44,12 @@ function securityHeaders(response: NextResponse, admin: boolean) {
   response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin")
-  if (admin) response.headers.set("X-Frame-Options", "DENY")
+  if (admin) {
+    response.headers.set("X-Frame-Options", "DENY")
+    // (2026-11-01) 관리자 화면은 브라우저·Cloudflare 가 저장해 두지 못하게 함.
+    //   저장된 옛 화면(옛 JS)이 남아 일반 창에서만 메뉴가 안 넘어가던 문제 방지.
+    response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate")
+  }
 
   const csp = [
     "default-src 'self'",
@@ -63,11 +74,17 @@ export async function middleware(request: NextRequest) {
 
   if (admin) {
     if (path !== "/admin-login") {
-      const ok = await verifyAdminSession(request.cookies.get(ADMIN_COOKIE)?.value)
-      if (!ok) {
+      const session = await verifyAdminSession(request.cookies.get(ADMIN_COOKIE)?.value)
+      if (!session) {
         const url = request.nextUrl.clone()
         url.pathname = "/admin-login"
         url.search = `?next=${encodeURIComponent(path)}`
+        return securityHeaders(NextResponse.redirect(url), true)
+      }
+      if (isPlatformOnlyPath(path) && session.role !== "platform") {
+        const url = request.nextUrl.clone()
+        url.pathname = "/admin"
+        url.search = ""
         return securityHeaders(NextResponse.redirect(url), true)
       }
     }

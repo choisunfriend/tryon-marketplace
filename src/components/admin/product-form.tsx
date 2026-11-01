@@ -138,9 +138,10 @@ function UploadField({
   )
 }
 
-function newUploadFolder(): string {
+// (2026-11-01) 앞머리: 입점사 계정은 "{slug}--" (서버가 이 앞머리 폴더만 새로 허용), 플랫폼은 "p-"
+function newUploadFolder(prefix = "p-"): string {
   const rand = Math.random().toString(36).slice(2, 8)
-  return `p-${Date.now().toString(36)}-${rand}`
+  return `${prefix}${Date.now().toString(36)}-${rand}`
 }
 
 // ============================================================================
@@ -224,10 +225,19 @@ export default function ProductForm({ product }: { product?: AdminProduct | null
   const [uploadFolder, setUploadFolder] = useState("")
   const [resetSignal, setResetSignal] = useState(0)
 
+  const [folderPrefix, setFolderPrefix] = useState<string | null>(null)
   useEffect(() => {
-    setUploadFolder((editId && resetSignal === 0 && folderOf(iv)) || newUploadFolder())
+    fetch("/api/admin/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setFolderPrefix(typeof d?.folderPrefix === "string" ? d.folderPrefix : "p-"))
+      .catch(() => setFolderPrefix("p-"))
+  }, [])
+
+  useEffect(() => {
+    if (folderPrefix === null) return // 앞머리를 알기 전에는 폴더를 안 정함(업로드 버튼은 folder 없으면 꺼져 있음)
+    setUploadFolder((editId && resetSignal === 0 && folderOf(iv)) || newUploadFolder(folderPrefix))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetSignal, editId])
+  }, [resetSignal, editId, folderPrefix])
 
   const [category, setCategory] = useState(str(product?.category) || "clothing")
   const [subcategory, setSubcategory] = useState(str(product?.subcategory))
