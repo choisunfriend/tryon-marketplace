@@ -14,12 +14,14 @@ function str(v: unknown): string {
   return v == null ? "" : String(v)
 }
 
+// (2026-11-01) 목록 미리보기 — 주소 모양이 정상(/api/assets/… · http(s)://)이고 짧을 때만 그림.
+//   data: 로 통째 저장된 큰 그림·이상한 값은 안 그림(폰에서 "페이지 응답 없음" 원인 후보). 끄기: 주소 끝 ?noimg=1 이면 그림 전부 안 씀
 function imageOf(p: Row): string {
-  const direct = str(p.image_url)
-  if (direct) return direct
   const media = p.media as { images?: { url?: string; type?: string }[] } | undefined
-  const imgs = media && Array.isArray(media.images) ? media.images : []
-  return str((imgs.find((i) => i?.type === "main") ?? imgs[0])?.url)
+  const imgs = media && typeof media === "object" && Array.isArray(media.images) ? media.images : []
+  const u = str(p.image_url) || str((imgs.find((i) => i?.type === "main") ?? imgs[0])?.url)
+  if (!u || u.length > 600) return ""
+  return /^(\/api\/assets\/|https?:\/\/)/.test(u) ? u : ""
 }
 
 function money(p: Row): string {
@@ -36,6 +38,7 @@ function money(p: Row): string {
 const STATUS = ["active", "draft", "archived"] as const
 
 export default function AdminProductsListPage() {
+  const [noImg] = useState(() => typeof window !== "undefined" && /[?&]noimg=1/.test(window.location.search))
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -174,14 +177,14 @@ export default function AdminProductsListPage() {
             <tbody>
               {shown.map((p) => {
                 const id = String(p.id)
-                const img = imageOf(p)
+                const img = noImg ? "" : imageOf(p)
                 const has3d = !!(str(p.model_path) || str((p.media as { model_file?: string } | undefined)?.model_file))
                 return (
                   <tr key={id} className={`border-t ${busy === id ? "opacity-50" : ""}`}>
                     <td className="p-3">
                       {img ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={img} alt="" className="h-14 w-14 rounded object-cover" />
+                        <img src={img} alt="" width={56} height={56} loading="lazy" decoding="async" className="h-14 w-14 rounded object-cover" />
                       ) : (
                         <div className="h-14 w-14 rounded bg-neutral-100" />
                       )}
