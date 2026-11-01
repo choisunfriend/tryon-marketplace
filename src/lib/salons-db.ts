@@ -170,6 +170,12 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
   if (spec.color !== undefined && !(typeof spec.color === "string" && /^#[0-9A-Fa-f]{6}$/.test(spec.color))) {
     throw new Error("color 는 #RRGGBB 형식이어야 합니다")
   }
+  // (2026-11-01) GYEOL 앱의 「미용실에 올리기」로 만든 스펙만 받음 (앱에서만 스타일을 만들게)
+  //   ⚠ 앱이 붙이는 표시일 뿐 서명이 아니라, 마음먹고 흉내 내면 막을 수는 없음 — 관리자 화면에 입력칸을 없애 길을 막는 것
+  const mark = spec.gyeol as Record<string, unknown> | undefined
+  if (!mark || typeof mark !== "object" || mark.app !== "gyeol") {
+    throw new Error("헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 등록할 수 있어요")
+  }
   if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error("스펙이 너무 큽니다 (16KB 이하)")
   return spec
 }

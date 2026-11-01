@@ -30,7 +30,8 @@ function LoginForm() {
       })
       const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string }
       if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`)
-      window.location.href = next
+      // (2026-11-01) #뒤(앱의 「미용실에 올리기」가 넘긴 스타일)는 로그인 뒤에도 이어 붙임
+      window.location.href = next + (/^\/admin\/salons\/upload$/.test(next) ? window.location.hash : "")
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인 실패")
       setPassword("")

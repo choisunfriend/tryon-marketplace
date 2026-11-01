@@ -4,12 +4,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react"
 import { PageHeader } from "@/components/ui/page-header"
 import { LocationPicker } from "@/components/salons/location-picker"
 import { formatMinor, geocode } from "@/lib/map"
-import presets from "@/data/hair-presets.json"
 
 // ============================================================================
 // (2026-11-01) 미용실 관리 — 입점사(미용실) 계정 · 플랫폼 운영자
 //   · 미용실(지점) 등록: 이름·주소·지도 위치·연락처·영업시간·예약 링크
-//   · 헤어스타일 등록: GYEOL 스타일 스펙(JSON) — 기본 스타일 6가지에서 시작해 고쳐 쓰기
+//   · 헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 추가 (→ /admin/salons/upload)
+//     여기서는 이름·가격·대상·순서·숨김만 고침 (스타일 모양은 앱에서 다시 만들어 올림)
 //   손님은 매장의 /salons 지도에서 미용실을 찾아 GYEOL 앱으로 3D 로 입어 봅니다.
 // ============================================================================
 
@@ -46,7 +46,6 @@ type Style = {
 type Me = { role: "platform" | "owner" | "staff"; store: { id: string; name: string } | null }
 
 const input = "w-full rounded-md border px-3 py-2 text-sm"
-const PRESETS = presets as Record<string, Record<string, unknown> & { name?: string; color?: string }>
 
 const emptySalon = {
   name: "",
@@ -62,7 +61,6 @@ const emptySalon = {
   store_id: "",
 }
 
-const firstPreset = Object.keys(PRESETS)[0]
 const emptyStyle = {
   name: "",
   gender: "both" as Style["gender"],
@@ -72,7 +70,6 @@ const emptyStyle = {
   thumbnail_url: "",
   sort: "0",
   status: "active" as Style["status"],
-  spec: JSON.stringify(PRESETS[firstPreset], null, 2),
 }
 
 function digitsOf(cur: string) {
@@ -201,13 +198,8 @@ export default function AdminSalonsPage() {
     }
   }
 
-  function startStyle(st: Style | null) {
+  function startStyle(st: Style) {
     setMsg(null)
-    if (!st) {
-      setStyleEditing("new")
-      setSform(emptyStyle)
-      return
-    }
     const cur = st.currency ?? ""
     setStyleEditing(st.id)
     setSform({
@@ -219,38 +211,12 @@ export default function AdminSalonsPage() {
       thumbnail_url: st.thumbnail_url ?? "",
       sort: String(st.sort),
       status: st.status,
-      spec: JSON.stringify(JSON.parse(st.spec), null, 2),
     })
-  }
-
-  function specColor(): string {
-    try {
-      const c = JSON.parse(sform.spec).color
-      return typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? c : "#7a6149"
-    } catch {
-      return "#7a6149"
-    }
-  }
-
-  function setSpecColor(c: string) {
-    try {
-      const o = JSON.parse(sform.spec)
-      o.color = c.toUpperCase()
-      setSform((f) => ({ ...f, spec: JSON.stringify(o, null, 2) }))
-    } catch {
-      setErr("스펙 JSON 이 깨져 있어 색을 바꿀 수 없어요")
-    }
   }
 
   async function saveStyle(e: FormEvent) {
     e.preventDefault()
-    if (!styleSalon) return
-    let spec: unknown
-    try {
-      spec = JSON.parse(sform.spec)
-    } catch {
-      return setErr("스펙이 올바른 JSON 이 아닙니다")
-    }
+    if (!styleSalon || !styleEditing) return
     const cur = sform.currency.trim().toUpperCase()
     const body = {
       name: sform.name,
@@ -261,11 +227,9 @@ export default function AdminSalonsPage() {
       thumbnail_url: sform.thumbnail_url,
       sort: Number(sform.sort) || 0,
       status: sform.status,
-      spec,
     }
     try {
-      if (styleEditing === "new") await api(`/api/admin/salons/${styleSalon.id}/styles`, "POST", body)
-      else await api(`/api/admin/salons/${styleSalon.id}/styles/${styleEditing}`, "PATCH", body)
+      await api(`/api/admin/salons/${styleSalon.id}/styles/${styleEditing}`, "PATCH", body)
       setStyleEditing(null)
       setMsg("스타일을 저장했어요")
       loadStyles(styleSalon)
@@ -413,9 +377,7 @@ export default function AdminSalonsPage() {
         <section className="space-y-3 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">「{styleSalon.name}」 헤어스타일 {styles.length}</h2>
-            <button type="button" className="rounded-md bg-black px-3 py-2 text-sm text-white" onClick={() => startStyle(null)}>
-              + 스타일 추가
-            </button>
+            <p className="text-xs text-muted-foreground">스타일 추가는 GYEOL 앱 손질 화면의 「미용실에 올리기」로</p>
           </div>
           <ul className="divide-y rounded-md border">
             {styles.map((st) => {
@@ -436,11 +398,15 @@ export default function AdminSalonsPage() {
                 </li>
               )
             })}
-            {!styles.length && <li className="px-3 py-6 text-center text-sm text-muted-foreground">아직 스타일이 없어요.</li>}
+            {!styles.length && (
+              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+                아직 스타일이 없어요. GYEOL 앱에서 머리를 만든 뒤 「미용실에 올리기」를 눌러 주세요.
+              </li>
+            )}
           </ul>
 
           {styleEditing && (
-            <form onSubmit={saveStyle} className="grid gap-4 lg:grid-cols-2">
+            <form onSubmit={saveStyle} className="max-w-xl">
               <div className="space-y-3">
                 <label className="block text-sm">
                   스타일 이름
@@ -485,42 +451,10 @@ export default function AdminSalonsPage() {
                   썸네일 주소 (https 또는 /api/assets/…)
                   <input className={input} value={sform.thumbnail_url} onChange={(e) => setSform({ ...sform, thumbnail_url: e.target.value })} />
                 </label>
-                <label className="flex items-center gap-3 text-sm">
-                  머리색
-                  <input type="color" value={specColor()} onChange={(e) => setSpecColor(e.target.value)} />
-                </label>
                 <div className="flex gap-2">
                   <button type="submit" className="rounded-md bg-black px-4 py-2 text-sm text-white">저장</button>
                   <button type="button" className="rounded-md border px-4 py-2 text-sm" onClick={() => setStyleEditing(null)}>취소</button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm">
-                  기본 스타일에서 시작
-                  <select
-                    className={input}
-                    defaultValue=""
-                    onChange={(e) => {
-                      const p = PRESETS[e.target.value]
-                      if (p) setSform((f) => ({ ...f, spec: JSON.stringify(p, null, 2), name: f.name || String(p.name ?? "") }))
-                    }}
-                  >
-                    <option value="">— 골라서 스펙 채우기 —</option>
-                    {Object.entries(PRESETS).map(([k, p]) => (
-                      <option key={k} value={k}>{String(p.name ?? k)}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm">
-                  스타일 스펙 (GYEOL JSON — cut · perm · styling · color …)
-                  <textarea
-                    className={`${input} font-mono text-xs`}
-                    rows={18}
-                    value={sform.spec}
-                    onChange={(e) => setSform({ ...sform, spec: e.target.value })}
-                    spellCheck={false}
-                  />
-                </label>
               </div>
             </form>
           )}
