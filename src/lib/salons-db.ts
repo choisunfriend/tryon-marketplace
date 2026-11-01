@@ -123,8 +123,9 @@ export function parseSalonInput(body: Record<string, unknown>, creating: boolean
 // 스타일 스펙 정리 — 순수 JSON 데이터만 통과 (함수·__proto__ 등 차단, 크기 제한)
 // 앱(js/35-salon-bridge.js)도 받을 때 같은 규칙으로 한 번 더 거릅니다.
 // ----------------------------------------------------------------------------
-const SPEC_MAX_BYTES = 16 * 1024
-const SPEC_MAX_DEPTH = 6
+// (2026-11-01) 앱이 원본 머리를 재서 만든 스타일은 수십 KB — 앱(35-salon-bridge.js)과 같은 한도
+const SPEC_MAX_BYTES = 512 * 1024
+const SPEC_MAX_DEPTH = 10
 const BAD_KEYS = new Set(["__proto__", "prototype", "constructor"])
 
 function cleanValue(v: unknown, depth: number): unknown {
@@ -135,11 +136,11 @@ function cleanValue(v: unknown, depth: number): unknown {
     return v
   }
   if (typeof v === "string") {
-    if (v.length > 120) throw new Error("스펙 안의 글자가 너무 깁니다 (최대 120자)")
+    if (v.length > 400) throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
     return v
   }
   if (Array.isArray(v)) {
-    if (v.length > 64) throw new Error("스펙 안의 목록이 너무 깁니다")
+    if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
     return v.map((x) => cleanValue(x, depth + 1))
   }
   if (typeof v === "object") {
@@ -153,6 +154,18 @@ function cleanValue(v: unknown, depth: number): unknown {
   throw new Error("스펙은 JSON 데이터만 넣을 수 있습니다")
 }
 
+// (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
+//   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
+const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
+function cleanGroom(g: unknown): Record<string, unknown> | undefined {
+  if (!g || typeof g !== "object" || Array.isArray(g)) return undefined
+  const x = g as Record<string, unknown>
+  const out: Record<string, unknown> = { v: typeof x.v === "number" ? x.v : 1 }
+  if (typeof x.comb === "string" && x.comb.length <= 260000 && B64_RE.test(x.comb)) out.comb = x.comb
+  if (typeof x.erase === "string" && x.erase.length <= 4000 && B64_RE.test(x.erase)) out.erase = x.erase
+  return out.comb || out.erase ? out : undefined
+}
+
 export function cleanSpec(input: unknown): Record<string, unknown> {
   let v = input
   if (typeof v === "string") {
@@ -163,6 +176,12 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
     }
   }
   if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("스펙은 { … } 객체여야 합니다")
+  let groom: Record<string, unknown> | undefined
+  if ("groom" in (v as object)) {
+    groom = cleanGroom((v as Record<string, unknown>).groom)
+    v = { ...(v as Record<string, unknown>) }
+    delete (v as Record<string, unknown>).groom
+  }
   const spec = cleanValue(v, 0) as Record<string, unknown>
   if (!spec.cut || typeof spec.cut !== "object" || Array.isArray(spec.cut)) {
     throw new Error("스펙에 cut(구역별 커트) 이 있어야 합니다")
@@ -176,7 +195,8 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
   if (!mark || typeof mark !== "object" || mark.app !== "gyeol") {
     throw new Error("헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 등록할 수 있어요")
   }
-  if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error("스펙이 너무 큽니다 (16KB 이하)")
+  if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error("스펙이 너무 큽니다 (512KB 이하)")
+  if (groom) spec.groom = groom
   return spec
 }
 
