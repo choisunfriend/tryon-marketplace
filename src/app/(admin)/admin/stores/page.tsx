@@ -10,11 +10,22 @@ import { PageHeader } from "@/components/ui/page-header"
 //   · 상태 바꾸기: pending(심사 중) → active(영업) ↔ suspended(정지)
 //   · 계정 추가 (owner / staff)
 // ============================================================================
+/* eslint-disable @next/next/no-html-link-for-pages -- 일반 <a> 이동 */
 
 type StoreItem = {
   id: string
   slug: string
   name: string
+  country: string
+  currency: string
+  review_status: "pending" | "approved" | "rejected"
+  review_note: string | null
+  applied_at: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  business_info: string | null
+  payout_account: string | null
   status: "pending" | "active" | "suspended"
   commission_rate: number
   product_count: number
@@ -29,6 +40,27 @@ const STATUS_LABEL: Record<StoreItem["status"], string> = {
 }
 
 const input = "w-full rounded-md border px-3 py-2 text-sm"
+
+const BIZ_LABEL: Record<string, string> = {
+  legalName: "상호",
+  representative: "대표자",
+  businessNumber: "사업자등록번호",
+  mailOrderNumber: "통신판매업",
+  address: "주소",
+  website: "웹사이트",
+  bank: "은행",
+  holder: "예금주",
+  number: "계좌",
+}
+
+function kv(json: string | null): [string, string][] {
+  if (!json) return []
+  try {
+    return Object.entries(JSON.parse(json) as Record<string, string>).filter(([, v]) => v)
+  } catch {
+    return []
+  }
+}
 
 async function call(url: string, method: string, body?: unknown) {
   const res = await fetch(url, {
@@ -47,6 +79,7 @@ export default function AdminStoresPage() {
   const [msg, setMsg] = useState("")
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ slug: "", name: "", ownerEmail: "", ownerPassword: "" })
+  const applications = (stores ?? []).filter((s) => s.review_status === "pending")
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +120,20 @@ export default function AdminStoresPage() {
     }
   }
 
+  async function review(s: StoreItem, decision: "approve" | "reject") {
+    let note: string | null = null
+    if (decision === "reject") {
+      note = window.prompt(`"${s.name}" 신청을 거절하는 이유 (신청자에게 보입니다)`)
+      if (!note) return
+    } else if (!window.confirm(`"${s.name}" 입점을 승인할까요? 바로 로그인·상품 등록이 가능해집니다.`)) return
+    try {
+      await call(`/api/admin/stores/${s.id}/review`, "POST", { decision, note })
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   async function addUser(s: StoreItem) {
     const email = window.prompt(`"${s.name}"에 추가할 계정 이메일`)
     if (!email) return
@@ -106,6 +153,54 @@ export default function AdminStoresPage() {
       <PageHeader title="입점사" description="마켓플레이스에 들어온 스토어와 그 관리 계정" />
 
       {error && <p className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+
+      <p className="mt-4 text-sm text-muted-foreground">
+        입점 신청 주소: <a href="/seller/apply" className="underline">/seller/apply</a> — 판매자에게 이 주소를 알려 주세요.
+      </p>
+
+      <h2 className="mt-8 font-semibold">
+        심사 대기 {applications.length > 0 && <span className="text-amber-700">({applications.length})</span>}
+      </h2>
+      {stores !== null && applications.length === 0 && <p className="mt-2 text-sm text-muted-foreground">대기 중인 신청이 없습니다.</p>}
+      <div className="mt-3 space-y-3">
+        {applications.map((s) => (
+          <div key={s.id} className="rounded-lg border border-amber-300 bg-amber-50/40 p-4 text-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-base font-medium">
+                {s.name} <span className="font-mono text-xs text-muted-foreground">/{s.slug}</span>{" "}
+                <span className="ml-1 rounded bg-white px-1.5 py-0.5 text-xs">{s.country} · {s.currency}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">{s.applied_at ? new Date(s.applied_at).toLocaleString() : ""}</p>
+            </div>
+            <p className="mt-1">
+              {s.contact_name} · {s.contact_phone} · {s.contact_email}
+            </p>
+            <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 text-xs">
+              {[...kv(s.business_info), ...kv(s.payout_account)].map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="text-muted-foreground">{BIZ_LABEL[k] ?? k}</dt>
+                  <dd className="break-all">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            {s.country === "KR" && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                확인: 국세청 홈택스 사업자 상태 조회 · 공정위 통신판매사업자 조회
+              </p>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => review(s, "approve")} className="rounded-md bg-neutral-900 px-3 py-1.5 text-white">
+                승인
+              </button>
+              <button type="button" onClick={() => review(s, "reject")} className="rounded-md border px-3 py-1.5 text-red-700">
+                거절
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mt-10 font-semibold">입점사</h2>
 
       <div className="mt-6 overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
@@ -127,10 +222,10 @@ export default function AdminStoresPage() {
                 </td>
               </tr>
             )}
-            {stores?.map((s) => (
+            {stores?.filter((s) => s.review_status !== "pending").map((s) => (
               <tr key={s.id} className="border-t">
                 <td className="px-4 py-2 font-medium">{s.name}</td>
-                <td className="px-4 py-2 font-mono text-xs">{s.slug}</td>
+                <td className="px-4 py-2 font-mono text-xs">{s.slug} · {s.country}</td>
                 <td className="px-4 py-2">
                   <span
                     className={
@@ -141,8 +236,11 @@ export default function AdminStoresPage() {
                           : "text-red-700"
                     }
                   >
-                    {STATUS_LABEL[s.status]}
+                    {s.review_status === "rejected" ? "거절됨" : STATUS_LABEL[s.status]}
                   </span>
+                  {s.review_status === "rejected" && s.review_note && (
+                    <p className="text-xs text-muted-foreground">{s.review_note}</p>
+                  )}
                 </td>
                 <td className="px-4 py-2">{s.product_count}</td>
                 <td className="px-4 py-2 text-xs">{s.owner_emails ?? "-"}</td>
@@ -168,7 +266,8 @@ export default function AdminStoresPage() {
       </div>
 
       <form onSubmit={create} className="mt-8 max-w-lg space-y-3 rounded-lg border p-6">
-        <h2 className="font-semibold">새 입점사</h2>
+        <h2 className="font-semibold">입점사 직접 만들기</h2>
+        <p className="text-xs text-muted-foreground">보통은 판매자가 /seller/apply 로 신청합니다. 직접 섭외한 곳만 여기서 만드세요 (한국·바로 영업).</p>
         <input
           className={input}
           placeholder="입점사 이름 (예: 무드웨어)"

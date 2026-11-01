@@ -1,3 +1,4 @@
+import { countryOf } from "@/lib/countries"
 import type { D1Database } from "@/lib/products-db"
 import { hashPassword, type AdminRole } from "@/lib/security"
 
@@ -18,7 +19,23 @@ export interface StoreRow {
   contact_email: string | null
   created_at: string
   updated_at: string
+  // 0002
+  country: string
+  currency: string
+  review_status: "pending" | "approved" | "rejected"
+  review_note: string | null
+  applied_at: string | null
+  reviewed_at: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  business_info: string | null
+  payout_provider: string | null
+  payout_status: string
+  payout_ref: string | null
+  payout_account: string | null
 }
+
+export type ReviewStatus = StoreRow["review_status"]
 
 export interface StoreUserRow {
   id: string
@@ -63,13 +80,14 @@ export async function listStores(db: D1Database) {
 // 입점사 + 대표 계정을 한 번에 만듦
 export async function createStoreWithOwner(
   db: D1Database,
-  input: { slug: string; name: string; ownerEmail: string; ownerPassword: string; status?: StoreStatus }
+  input: { slug: string; name: string; ownerEmail: string; ownerPassword: string; status?: StoreStatus; country?: string }
 ) {
   const now = new Date().toISOString()
   const storeId = crypto.randomUUID()
   const userId = crypto.randomUUID()
   const hash = await hashPassword(input.ownerPassword)
   const status = input.status ?? "active"
+  const country = countryOf(input.country) ?? countryOf("KR")!
 
   if (await db.prepare(`SELECT 1 FROM stores WHERE slug = ?`).bind(input.slug).first()) {
     throw new Error("이미 쓰는 slug 입니다")
@@ -78,9 +96,10 @@ export async function createStoreWithOwner(
 
   await db
     .prepare(
-      `INSERT INTO stores (id, slug, name, status, contact_email, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO stores (id, slug, name, status, contact_email, country, currency, review_status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?)`
     )
-    .bind(storeId, input.slug, input.name, status, input.ownerEmail, now, now)
+    .bind(storeId, input.slug, input.name, status, input.ownerEmail, country.code, country.currency, now, now)
     .run()
   try {
     await db
@@ -109,6 +128,8 @@ export async function updateStore(
   }
   if (input.name !== undefined) add("name", input.name)
   if (input.status !== undefined) add("status", input.status)
+  // 운영자가 직접 영업 시작시키면 심사도 승인으로 봄
+  if (input.status === "active") add("review_status", "approved")
   if (input.commission_rate !== undefined) add("commission_rate", input.commission_rate)
   if (!sets.length) throw new Error("바꿀 값이 없습니다")
   sets.push("updated_at = ?")
@@ -130,4 +151,69 @@ export async function addStoreUser(
     .bind(id, input.storeId, input.email.trim(), await hashPassword(input.password), input.role, new Date().toISOString())
     .run()
   return { id, email: input.email.trim(), role: input.role }
+}
+
+// ----------------------------------------------------------------------------
+// 입점 신청 (공개) — 심사 중(status=pending · review_status=pending) 입점사 + 대표 계정
+// ----------------------------------------------------------------------------
+export interface Application {
+  country: string
+  slug: string
+  name: string
+  contactName: string
+  contactPhone: string
+  email: string
+  password: string
+  business: Record<string, string>
+  payoutAccount: Record<string, string> | null
+}
+
+export async function createApplication(db: D1Database, a: Application) {
+  const country = countryOf(a.country)
+  if (!country) throw new Error("지원하지 않는 나라입니다")
+  if (await db.prepare(`SELECT 1 FROM stores WHERE slug = ?`).bind(a.slug).first()) throw new Error("이미 쓰는 주소(slug)입니다")
+  if (await findUserByEmail(db, a.email)) throw new Error("이미 가입된 이메일입니다")
+
+  const now = new Date().toISOString()
+  const storeId = crypto.randomUUID()
+  const hash = await hashPassword(a.password)
+  await db
+    .prepare(
+      `INSERT INTO stores (id, slug, name, status, contact_email, country, currency, review_status, applied_at,
+                           contact_name, contact_phone, business_info, payout_provider, payout_account, created_at, updated_at)
+       VALUES (?, ?, ?, 'pending', ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      storeId, a.slug, a.name, a.email, country.code, country.currency, now,
+      a.contactName, a.contactPhone, JSON.stringify(a.business), country.payoutProvider,
+      a.payoutAccount ? JSON.stringify(a.payoutAccount) : null, now, now
+    )
+    .run()
+  try {
+    await db
+      .prepare(`INSERT INTO store_users (id, store_id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, 'owner', ?)`)
+      .bind(crypto.randomUUID(), storeId, a.email.trim(), hash, now)
+      .run()
+  } catch (e) {
+    await db.prepare(`DELETE FROM stores WHERE id = ?`).bind(storeId).run()
+    throw e
+  }
+  return storeId
+}
+
+// 심사: 승인 → 영업 시작(active) / 거절 → 사유 남김(로그인 때 신청자에게 보임)
+export async function reviewStore(db: D1Database, id: string, decision: "approve" | "reject", note: string | null) {
+  const now = new Date().toISOString()
+  const r =
+    decision === "approve"
+      ? await db
+          .prepare(`UPDATE stores SET review_status = 'approved', status = 'active', review_note = ?, reviewed_at = ?, updated_at = ? WHERE id = ? AND review_status <> 'approved'`)
+          .bind(note, now, now, id)
+          .run()
+      : await db
+          .prepare(`UPDATE stores SET review_status = 'rejected', status = 'pending', review_note = ?, reviewed_at = ?, updated_at = ? WHERE id = ? AND review_status = 'pending'`)
+          .bind(note, now, now, id)
+          .run()
+  if (!r.meta?.changes) return null
+  return getStore(db, id)
 }

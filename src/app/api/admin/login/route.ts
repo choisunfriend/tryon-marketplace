@@ -123,6 +123,13 @@ async function loginWithAccount(email: string, password: string): Promise<LoginR
   }
   const store = user.store_id ? await getStore(db, user.store_id) : null
   if (!store) return BAD_LOGIN
+  if (store.review_status === "rejected") {
+    return {
+      ok: false,
+      status: 403,
+      error: `입점 신청이 승인되지 않았습니다${store.review_note ? ` — ${store.review_note}` : ""}`,
+    }
+  }
   if (store.status !== "active") {
     return {
       ok: false,

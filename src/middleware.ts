@@ -12,6 +12,7 @@ import { ADMIN_COOKIE, appOrigins, verifyAdminSession } from "@/lib/security"
 //    ⚠ Sec-Fetch-Dest 를 안 보내는 아주 오래된 브라우저는 구분할 수 없어 통과시킵니다.
 // ② 관리자 화면(/admin…)은 서명된 관리자 쿠키가 있어야 열립니다(없으면 /admin-login).
 //    (2026-11-01) /admin/stores · /admin/sync 는 플랫폼 운영자만 (입점사 계정은 /admin 으로)
+//    (2026-11-01) /seller/apply(입점 신청)는 누구나 바로 열 수 있음(iframe 금지)
 //    관리자 화면은 어떤 사이트에도 iframe 으로 들어가지 못합니다(frame-ancestors 'none').
 // ③ API(/api/…)는 각 라우트가 직접 권한·출처를 확인합니다.
 // ============================================================================
@@ -20,6 +21,11 @@ const BACKEND_ORIGIN = "https://tryon-marketplace.choisunfriend.workers.dev"
 
 function isAdminPath(p: string) {
   return p === "/admin" || p.startsWith("/admin/") || p === "/admin-login"
+}
+
+// (2026-11-01) 입점 신청 화면 — 앱 밖에서 바로 여는 공개 페이지 (로그인 필요 없음, iframe 금지)
+function isSellerPath(p: string) {
+  return p === "/seller" || p.startsWith("/seller/")
 }
 
 // (2026-11-01) 플랫폼 운영자만 여는 관리자 화면
@@ -38,7 +44,7 @@ function blockedPage(): NextResponse {
   })
 }
 
-function securityHeaders(response: NextResponse, admin: boolean) {
+function securityHeaders(response: NextResponse, admin: boolean, turnstile = false) {
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
@@ -54,7 +60,7 @@ function securityHeaders(response: NextResponse, admin: boolean) {
   const csp = [
     "default-src 'self'",
     // Next.js 가 넣는 인라인 스크립트 때문에 'unsafe-inline' 은 남김('unsafe-eval' 은 뺌)
-    "script-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'unsafe-inline'${turnstile ? " https://challenges.cloudflare.com" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
@@ -62,6 +68,7 @@ function securityHeaders(response: NextResponse, admin: boolean) {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    ...(turnstile ? ["frame-src https://challenges.cloudflare.com"] : []),
     `frame-ancestors ${admin ? "'none'" : ["'self'", ...appOrigins()].join(" ")}`,
   ].join("; ")
   response.headers.set("Content-Security-Policy", csp)
@@ -71,6 +78,8 @@ function securityHeaders(response: NextResponse, admin: boolean) {
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const admin = isAdminPath(path)
+
+  if (isSellerPath(path)) return securityHeaders(NextResponse.next(), true, true)
 
   if (admin) {
     if (path !== "/admin-login") {

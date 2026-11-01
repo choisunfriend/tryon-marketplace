@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable @next/next/no-html-link-for-pages -- 일반 <a> 이동 */
 
 import { FormEvent, Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
@@ -67,6 +68,9 @@ function LoginForm() {
       >
         {busy ? "확인 중…" : "로그인"}
       </button>
+      <p className="text-center text-sm">
+        <a href="/seller/apply" className="underline">입점 신청하기 · Apply as a seller</a>
+      </p>
     </form>
   )
 }
