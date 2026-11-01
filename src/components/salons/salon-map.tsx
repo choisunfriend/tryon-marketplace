@@ -197,10 +197,18 @@ export function SalonMap() {
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-color": "#1b1816",
-            "circle-radius": 9,
+            "circle-radius": 11,
             "circle-stroke-color": "#c98b52",
             "circle-stroke-width": 3,
           },
+        })
+        // 폰에서 손가락으로 누르기 쉽게 — 보이지 않는 큰 원(반지름 26px)을 누르는 자리로 씀
+        map.addLayer({
+          id: "salon-hit",
+          type: "circle",
+          source: "salons",
+          filter: ["!", ["has", "point_count"]],
+          paint: { "circle-radius": 26, "circle-opacity": 0 },
         })
         map.addLayer({
           id: "salon-labels",
@@ -218,18 +226,24 @@ export function SalonMap() {
           paint: { "text-color": "#1b1816", "text-halo-color": "#fff", "text-halo-width": 1.5 },
         })
 
-        map.on("click", "salon-clusters", async (e) => {
-          const f = e.features?.[0] as MapGeoJSONFeature | undefined
-          if (!f || !map) return
-          const src = map.getSource("salons") as GeoJSONSource
-          const zoom = await src.getClusterExpansionZoom(f.properties.cluster_id as number)
-          map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom })
+        // 누른 자리 둘레 14px 안의 미용실·묶음을 찾음 (손가락이 조금 빗나가도 열림)
+        map.on("click", async (e) => {
+          if (!map) return
+          const r = 14
+          const feats = map.queryRenderedFeatures(
+            [[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]],
+            { layers: ["salon-hit", "salon-points", "salon-clusters"] }
+          )
+          const point = feats.find((f) => f.layer.id !== "salon-clusters" && typeof f.properties?.id === "string")
+          if (point) return openSalon(point.properties.id as string)
+          const cluster = feats.find((f) => f.layer.id === "salon-clusters")
+          if (cluster) {
+            const src = map.getSource("salons") as GeoJSONSource
+            const zoom = await src.getClusterExpansionZoom(cluster.properties.cluster_id as number)
+            map.easeTo({ center: (cluster.geometry as GeoJSON.Point).coordinates as [number, number], zoom })
+          }
         })
-        map.on("click", "salon-points", (e) => {
-          const id = e.features?.[0]?.properties?.id
-          if (typeof id === "string") openSalon(id)
-        })
-        for (const layer of ["salon-clusters", "salon-points"]) {
+        for (const layer of ["salon-clusters", "salon-hit"]) {
           map.on("mouseenter", layer, () => map && (map.getCanvas().style.cursor = "pointer"))
           map.on("mouseleave", layer, () => map && (map.getCanvas().style.cursor = ""))
         }
@@ -342,7 +356,14 @@ export function SalonMap() {
       </div>
 
       {/* 옆(아래) 패널: 고른 미용실 or 근처 목록 */}
-      <aside className="max-h-[45%] w-full overflow-y-auto border-t bg-background lg:max-h-none lg:w-[380px] lg:border-l lg:border-t-0">
+      {/* 폰: 미용실을 고르면 지도 위에 아래서 올라오는 시트로 (앱 안 좁은 창에서 아래 목록이 화면 밖에 있어 안 보이던 문제) */}
+      <aside
+        className={
+          selected || loadingDetail
+            ? "absolute inset-x-0 bottom-0 z-20 max-h-[75%] overflow-y-auto rounded-t-xl border-t bg-background shadow-2xl lg:static lg:max-h-none lg:w-[380px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
+            : "max-h-[45%] w-full overflow-y-auto border-t bg-background lg:max-h-none lg:w-[380px] lg:border-l lg:border-t-0"
+        }
+      >
         {selected ? (
           <div className="p-4">
             <div className="mb-3 flex items-start justify-between gap-2">
@@ -418,13 +439,14 @@ export function SalonMap() {
               <p className="mt-3 text-xs text-muted-foreground">GYEOL 앱에서 열면 내 얼굴에 바로 입어 볼 수 있어요.</p>
             )}
           </div>
+        ) : loadingDetail ? (
+          <p className="p-4 text-sm text-muted-foreground">미용실 정보를 불러오는 중…</p>
         ) : (
           <div className="p-4">
             <h2 className="mb-1 text-base font-semibold">이 근처 미용실</h2>
             <p className="mb-3 text-xs text-muted-foreground">
               지도를 움직이면 그 지역 미용실이 나와요{truncated ? " · 너무 많아 일부만 보여요, 확대해 보세요" : ""}
             </p>
-            {loadingDetail && <p className="text-sm text-muted-foreground">불러오는 중…</p>}
             {!nearby.length && <p className="text-sm text-muted-foreground">이 지역엔 아직 등록된 미용실이 없어요.</p>}
             <ul className="divide-y">
               {nearby.map((s) => (
