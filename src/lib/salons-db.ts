@@ -128,53 +128,50 @@ const SPEC_MAX_BYTES = 512 * 1024
 const SPEC_MAX_DEPTH = 10
 const BAD_KEYS = new Set(["__proto__", "prototype", "constructor"])
 
-function cleanValue(v: unknown, depth: number): unknown {
-  if (depth > SPEC_MAX_DEPTH) throw new Error("스펙이 너무 깊게 중첩되어 있습니다")
+function cleanValue(v: unknown, depth: number, keyPath = "spec"): unknown {
+  if (depth > SPEC_MAX_DEPTH) {
+    throw new Error(`${keyPath}: 스펙이 너무 깊게 중첩되어 있습니다`)
+  }
+
   if (v === null || typeof v === "boolean") return v
+
   if (typeof v === "number") {
-    if (!Number.isFinite(v)) throw new Error("스펙에 숫자가 아닌 값(NaN·Infinity)이 있습니다")
+    if (!Number.isFinite(v)) {
+      throw new Error(`${keyPath}: 숫자가 올바르지 않습니다`)
+    }
     return v
   }
+
   if (typeof v === "string") {
-    if (v.length > 400) throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
+    if (v.length > 1000) {
+      // v 자체는 오류에 넣지 말고, 필드 경로와 길이만 표시
+      throw new Error(`${keyPath}: 문자열이 너무 깁니다 (${v.length}자)`)
+    }
     return v
   }
+
   if (Array.isArray(v)) {
-    if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
-    return v.map((x) => cleanValue(x, depth + 1))
+    if (v.length > 20000) {
+      throw new Error(`${keyPath}: 목록이 너무 깁니다`)
+    }
+    return v.map((item, index) =>
+      cleanValue(item, depth + 1, `${keyPath}[${index}]`)
+    )
   }
+
   if (typeof v === "object") {
     const out: Record<string, unknown> = {}
-    for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
-      if (BAD_KEYS.has(k) || !/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k)) throw new Error(`스펙에 쓸 수 없는 키: ${k}`)
-      out[k] = cleanValue(x, depth + 1)
+    for (const [key, value] of Object.entries(v as Record<string, unknown>)) {
+      if (BAD_KEYS.has(key) || !/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(key)) {
+        throw new Error(`${keyPath}: 스펙에 쓸 수 없는 키`)
+      }
+      out[key] = cleanValue(value, depth + 1, `${keyPath}.${key}`)
     }
     return out
   }
-  throw new Error("스펙은 JSON 데이터만 넣을 수 있습니다")
-}
 
-// (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
-//   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
-const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
-function cleanGroom(g: unknown): Record<string, unknown> | undefined {
-  if (!g || typeof g !== "object" || Array.isArray(g)) return undefined
-  const x = g as Record<string, unknown>
-  const out: Record<string, unknown> = { v: typeof x.v === "number" ? x.v : 1 }
-  if (typeof x.comb === "string" && x.comb.length <= 260000 && B64_RE.test(x.comb)) out.comb = x.comb
-  if (typeof x.erase === "string" && x.erase.length <= 4000 && B64_RE.test(x.erase)) out.erase = x.erase
-  return out.comb || out.erase ? out : undefined
+  throw new Error(`${keyPath}: 스펙은 JSON 데이터만 넣을 수 있습니다`)
 }
-
-export function cleanSpec(input: unknown): Record<string, unknown> {
-  let v = input
-  if (typeof v === "string") {
-    try {
-      v = JSON.parse(v)
-    } catch {
-      throw new Error("스펙이 올바른 JSON 이 아닙니다")
-    }
-  }
   if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("스펙은 { … } 객체여야 합니다")
   let groom: Record<string, unknown> | undefined
   if ("groom" in (v as object)) {
