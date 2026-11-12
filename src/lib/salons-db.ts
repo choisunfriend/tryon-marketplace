@@ -143,13 +143,15 @@ function cleanValue(v: unknown, depth: number, keyPath = "spec"): unknown {
     return v
   }
 
-   if (typeof v === "string") {
--    if (v.length > 1000) {
-+    if (v.length > 1000 && keyPath !== "spec.flow.d") {
-       throw new Error(`${keyPath}: 문자열이 너무 깁니다 (${v.length}자)`)
-     }
-     return v
-   }
+    if (typeof v === "string") {
+    const byteLength = new TextEncoder().encode(v).byteLength
+    const maxBytes = keyPath.endsWith(".flow.d") ? SPEC_MAX_BYTES : 1000
+
+    if (byteLength > maxBytes) {
+      throw new Error(`${keyPath}: 문자열이 너무 큽니다 (${byteLength}바이트)`)
+    }
+    return v
+  }
 
   if (Array.isArray(v)) {
     if (v.length > 20000) {
