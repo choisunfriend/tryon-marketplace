@@ -128,17 +128,18 @@ const SPEC_MAX_BYTES = 512 * 1024
 const SPEC_MAX_DEPTH = 10
 const BAD_KEYS = new Set(["__proto__", "prototype", "constructor"])
 
-const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
+const B64_RE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
 function cleanValue(v: unknown, depth: number, path = ""): unknown {
   if (depth > SPEC_MAX_DEPTH) throw new Error("스펙이 너무 깊게 중첩되어 있습니다")
   if (v === null || typeof v === "boolean") return v
+
   if (typeof v === "number") {
     if (!Number.isFinite(v)) throw new Error("스펙에 숫자가 아닌 값(NaN·Infinity)이 있습니다")
     return v
   }
- if (typeof v === "string") {
-    // flow.d는 앱이 보내는 Base64 데이터이므로 일반 문자열 제한과 분리해 검사합니다.
+
+  if (typeof v === "string") {
     if (path === "flow.d") {
       if (v.length > 260000) {
         throw new Error(`flow.d가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
@@ -148,14 +149,18 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
       }
       return v
     }
+
     if (v.length > 1000) {
       throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path || "(root)"})`)
+    }
     return v
   }
+
   if (Array.isArray(v)) {
     if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
     return v.map((x) => cleanValue(x, depth + 1, `${path}[]`))
   }
+
   if (typeof v === "object") {
     const out: Record<string, unknown> = {}
     for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
@@ -166,9 +171,9 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     }
     return out
   }
- throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`)
-}
 
+  throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`)
+}
 // (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
 //   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
 
