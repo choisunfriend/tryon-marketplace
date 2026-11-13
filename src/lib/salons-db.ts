@@ -169,7 +169,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     }
     return out
   }
-  throw new Error("스펙은 JSON 데이터만 넣을 수 있습니다")
+ throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (경로: ${path || "(root)"}, 타입: ${typeof v})`)
 }
 
 // (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
