@@ -140,7 +140,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
  if (typeof v === "string") {
   const isLongFlowData =
     path === "flow.d" && v.length <= 260000 && B64_RE.test(v)
-  if (v.length > 400 && !isLongFlowData) {
+  if (v.length > 400) {
     console.error("cleanValue reject", { path, type: typeof v, length: v.length, sample: v.slice(0, 80) })
     throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 400자)`)
   }
