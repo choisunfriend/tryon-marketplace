@@ -137,24 +137,15 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     if (!Number.isFinite(v)) throw new Error("스펙에 숫자가 아닌 값(NaN·Infinity)이 있습니다")
     return v
   }
-  if (typeof v === "string") {
-    const isFlowData = path === "flow.d"
-    const isStandardBase64 = B64_RE.test(v)
-    const isBase64Url = /^[A-Za-z0-9_-]*={0,2}$/.test(v)
-    const flowFormat = isStandardBase64
-      ? "표준 Base64(+/)"
-      : isBase64Url
-        ? "Base64URL(-_)"
-        : "기타"
-    const isLongFlowData = isFlowData && v.length <= 260000 && isStandardBase64
-
-    if (v.length > 400 && !isLongFlowData) {
-      if (isFlowData) {
-        throw new Error(`flow.d가 글자 제한에 걸렸습니다 (길이: ${v.length}, 형식: ${flowFormat})`)
-      }
-      throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
-    }
+ if (typeof v === "string") {
+  const isLongFlowData =
+    path === "flow.d" && v.length <= 260000 && B64_RE.test(v)
+  if (v.length > 400 && !isLongFlowData) {
+    console.error("cleanValue reject", { path, type: typeof v, length: v.length, sample: v.slice(0, 80) })
+    throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 400자)`)
   }
+  return v
+}
   if (Array.isArray(v)) {
     if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
     return v.map((x) => cleanValue(x, depth + 1, `${path}[]`))
@@ -169,7 +160,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     }
     return out
   }
- throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (경로: ${path || "(root)"}, 타입: ${typeof v})`)
+ throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`)
 }
 
 // (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
