@@ -138,14 +138,15 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     return v
   }
  if (typeof v === "string") {
-  const isLongFlowData =
-    path === "flow.d" && v.length <= 260000 && B64_RE.test(v)
-  if (v.length > 1000) {
-    console.error("cleanValue reject", { path, type: typeof v, length: v.length, sample: v.slice(0, 80) })
-    throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자)`)
+  if (path === "flow.d") {
+    if (v.length > 260000) {
+      throw new Error(`flow.d가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
+    }
+    if (!B64_RE.test(v)) {
+      throw new Error(`flow.d가 Base64 형식이 아닙니다 (길이: ${v.length})`)
+    }
+    return v
   }
-  return v
-}
   if (Array.isArray(v)) {
     if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
     return v.map((x) => cleanValue(x, depth + 1, `${path}[]`))
