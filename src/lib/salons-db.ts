@@ -138,12 +138,22 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     return v
   }
   if (typeof v === "string") {
-    const isLongFlowData =
-      path === "flow.d" && v.length <= 260000 && B64_RE.test(v)
+    const isFlowData = path === "flow.d"
+    const isStandardBase64 = B64_RE.test(v)
+    const isBase64Url = /^[A-Za-z0-9_-]*={0,2}$/.test(v)
+    const flowFormat = isStandardBase64
+      ? "표준 Base64(+/)"
+      : isBase64Url
+        ? "Base64URL(-_)"
+        : "기타"
+    const isLongFlowData = isFlowData && v.length <= 260000 && isStandardBase64
+
     if (v.length > 400 && !isLongFlowData) {
+      if (isFlowData) {
+        throw new Error(`flow.d가 글자 제한에 걸렸습니다 (길이: ${v.length}, 형식: ${flowFormat})`)
+      }
       throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
     }
-    return v
   }
   if (Array.isArray(v)) {
     if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
