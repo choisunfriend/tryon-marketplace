@@ -128,7 +128,9 @@ const SPEC_MAX_BYTES = 512 * 1024
 const SPEC_MAX_DEPTH = 10
 const BAD_KEYS = new Set(["__proto__", "prototype", "constructor"])
 
-function cleanValue(v: unknown, depth: number): unknown {
+const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
+
+function cleanValue(v: unknown, depth: number, path = ""): unknown {
   if (depth > SPEC_MAX_DEPTH) throw new Error("스펙이 너무 깊게 중첩되어 있습니다")
   if (v === null || typeof v === "boolean") return v
   if (typeof v === "number") {
@@ -136,18 +138,24 @@ function cleanValue(v: unknown, depth: number): unknown {
     return v
   }
   if (typeof v === "string") {
-    if (v.length > 400) throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
+    const isLongFlowData =
+      path === "flow.d" && v.length <= 260000 && B64_RE.test(v)
+    if (v.length > 400 && !isLongFlowData) {
+      throw new Error("스펙 안의 글자가 너무 깁니다 (최대 400자)")
+    }
     return v
   }
   if (Array.isArray(v)) {
     if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
-    return v.map((x) => cleanValue(x, depth + 1))
+    return v.map((x) => cleanValue(x, depth + 1, `${path}[]`))
   }
   if (typeof v === "object") {
     const out: Record<string, unknown> = {}
     for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
-      if (BAD_KEYS.has(k) || !/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k)) throw new Error(`스펙에 쓸 수 없는 키: ${k}`)
-      out[k] = cleanValue(x, depth + 1)
+      if (BAD_KEYS.has(k) || !/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k)) {
+        throw new Error(`스펙에 쓸 수 없는 키: ${k}`)
+      }
+      out[k] = cleanValue(x, depth + 1, path ? `${path}.${k}` : k)
     }
     return out
   }
@@ -156,7 +164,7 @@ function cleanValue(v: unknown, depth: number): unknown {
 
 // (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
 //   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
-const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
+
 function cleanGroom(g: unknown): Record<string, unknown> | undefined {
   if (!g || typeof g !== "object" || Array.isArray(g)) return undefined
   const x = g as Record<string, unknown>
