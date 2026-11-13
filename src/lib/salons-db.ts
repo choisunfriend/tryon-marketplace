@@ -141,7 +141,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
 
   if (typeof v === "string") {
   if (path === "flow.d" || path === "readpaths.d") {
-    if (v.length > 260000) {
+    if (v.length > 400000) {
       throw new Error(`${path}가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
     }
     if (!B64_RE.test(v)) {
