@@ -138,13 +138,18 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     return v
   }
  if (typeof v === "string") {
-  if (path === "flow.d") {
-    if (v.length > 260000) {
-      throw new Error(`flow.d가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
+    // flow.d는 앱이 보내는 Base64 데이터이므로 일반 문자열 제한과 분리해 검사합니다.
+    if (path === "flow.d") {
+      if (v.length > 260000) {
+        throw new Error(`flow.d가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
+      }
+      if (!B64_RE.test(v)) {
+        throw new Error(`flow.d가 Base64 형식이 아닙니다 (길이: ${v.length})`)
+      }
+      return v
     }
-    if (!B64_RE.test(v)) {
-      throw new Error(`flow.d가 Base64 형식이 아닙니다 (길이: ${v.length})`)
-    }
+    if (v.length > 1000) {
+      throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path || "(root)"})`)
     return v
   }
   if (Array.isArray(v)) {
