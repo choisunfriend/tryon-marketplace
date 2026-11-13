@@ -151,7 +151,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
   }
 
   if (v.length > 1000) {
-     throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path},현재${v.length})`)
+     throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path},현재 ${v.length}자)`)
   }
   return v
 }
