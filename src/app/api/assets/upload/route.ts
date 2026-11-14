@@ -11,6 +11,12 @@ import { canUseFolder, requireAdmin } from "@/lib/admin-guard"
 //   folder : 상품 폴더 이름 (영문·숫자·-·_)
 // 저장 위치: products/{folder}/images/... 또는 products/{folder}/model/...
 //   (기존 테스트 상품과 같은 규칙: products/product-test-001/model/product.obj)
+//
+// (2026-11-14) 3D 옷은 OBJ + MTL(색) + 텍스처 이미지가 한 벌이다.
+//   · model 칸에서도 png/jpg/webp 를 받아 같은 model/ 폴더에 둔다 — MTL 의 map_Kd 가
+//     상대경로(같은 폴더)로 이미지를 찾기 때문.
+//   · 파일 이름을 safeName 으로 바꾸므로, OBJ 안의 `mtllib` 과 MTL 안의 `map_*` 이 가리키는
+//     이름도 같은 규칙으로 바꿔 적는다(안 그러면 "Shirt 01.mtl" → "Shirt-01.mtl" 로 저장돼 연결이 끊김).
 // ============================================================================
 
 const RULES = {
@@ -22,7 +28,7 @@ const RULES = {
   model: {
     dir: "model",
     maxBytes: 50 * 1024 * 1024,
-    ext: ["obj", "mtl", "glb", "gltf"],
+    ext: ["obj", "mtl", "glb", "gltf", "png", "jpg", "jpeg", "webp"],
   },
 } as const
 
@@ -65,6 +71,39 @@ function looksLike(ext: string, head: Uint8Array): boolean {
     default:
       return false
   }
+}
+
+// 경로 조각("textures\\Shirt 01.png", "C:/Users/.../a.png")에서 파일 이름만 꺼내 safeName 규칙으로
+function refName(ref: string): string | null {
+  const file = ref.trim().replace(/^["']|["']$/g, "").split(/[\\/]/).pop() ?? ""
+  const dot = file.lastIndexOf(".")
+  if (dot <= 0) return null
+  return safeName(file, file.slice(dot + 1).toLowerCase())
+}
+
+// OBJ: `mtllib a.mtl b.mtl` / MTL: `map_Kd [-옵션 값…] 경로` — 경로 부분만 바꾼다.
+// 블렌더가 내 컴퓨터 절대경로(C:\Users\…\shirt.png)를 적어 와도 파일 이름만 남는다.
+function relinkText(ext: string, text: string): string {
+  if (ext === "obj") {
+    return text.replace(/^(mtllib[ \t]+)(.+?)[ \t]*$/gm, (_m, head: string, rest: string) => {
+      // 블렌더는 "mtllib Shirt 01.mtl" 처럼 공백 있는 이름을 따옴표 없이 적는다 —
+      // 토큰마다 .mtl 로 끝날 때만 여러 파일로 보고, 아니면 줄 전체를 한 이름으로 본다
+      const toks = rest.trim().split(/\s+/)
+      const list = toks.every((t) => /\.mtl$/i.test(t)) ? toks : [rest.trim()]
+      return head + list.map((r) => refName(r) ?? r).join(" ")
+    })
+  }
+  if (ext === "mtl") {
+    return text.replace(/^([ \t]*(?:map_\w+|bump|disp|decal|refl|norm)[ \t]+)(.+?)[ \t]*$/gim, (_m, head: string, rest: string) => {
+      // 옵션(-s 1 1 1, -bm 0.5 …) 뒤 마지막 토큰들이 경로 — 공백 있는 경로를 위해 마지막 "확장자 있는" 덩어리를 찾는다
+      const mm = rest.match(/^((?:-\w+(?:[ \t]+-?[\d.]+)*[ \t]+)*)(.+)$/)
+      const opts = mm ? mm[1] : ""
+      const path = mm ? mm[2] : rest
+      const name = refName(path)
+      return head + opts + (name ?? path)
+    })
+  }
+  return text
 }
 
 function fail(error: string, status = 400) {
@@ -118,9 +157,18 @@ export async function POST(request: Request) {
     return fail(`파일이 너무 큽니다 (최대 ${rule.maxBytes / 1024 / 1024}MB)`)
   }
 
-  const data = await file.arrayBuffer()
+  let data = await file.arrayBuffer()
   if (!looksLike(ext, new Uint8Array(data.slice(0, 512)))) {
     return fail("파일 내용이 확장자와 맞지 않습니다")
+  }
+  // (2026-11-14) OBJ·MTL 안의 파일 참조를 저장 이름 규칙에 맞춤 (mtllib·map_Kd 연결 유지)
+  let refs: string[] = []
+  if (kind === "model" && (ext === "obj" || ext === "mtl")) {
+    const before = new TextDecoder().decode(data)
+    const after = relinkText(ext, before)
+    if (after !== before) data = new TextEncoder().encode(after).buffer as ArrayBuffer
+    const re = ext === "obj" ? /^mtllib[ \t]+(.+?)[ \t]*$/gm : /^[ \t]*map_Kd[ \t]+(?:.*[ \t])?(\S+\.\w+)[ \t]*$/gim
+    refs = [...after.matchAll(re)].flatMap((m) => m[1].trim().split(/\s+/))
   }
 
   const key = `products/${folder}/${rule.dir}/${safeName(file.name, ext)}`
@@ -133,5 +181,7 @@ export async function POST(request: Request) {
     key,
     url: assetUrl(key),
     size: file.size,
+    name: key.split("/").pop(),
+    refs, // OBJ 면 mtllib 이름들, MTL 이면 map_Kd 이미지 이름들 — 화면이 빠진 파일을 알려 줄 때 씀
   })
 }

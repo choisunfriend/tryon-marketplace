@@ -66,7 +66,23 @@ const KIND_LABEL: Record<GarmentKind, string> = {
 const assetUrl = (key: string) =>
   "/api/assets/" + key.split("/").map(encodeURIComponent).join("/")
 
-function toItem(p: ApiProduct): Item | null {
+// (2026-11-14) D1 JSON 컬럼(media·avatar)은 문자열로 올 수도, 객체로 올 수도 있다
+// (json-product-repository.ts 와 같은 처리). 예전엔 객체로만 읽어서, 문자열로 온 상품은
+// 3D 파일·성별·옷 종류·썸네일을 못 읽었다.
+function asObj<T>(v: unknown): T | null {
+  if (v && typeof v === "object") return v as T
+  if (typeof v === "string" && v.trim().startsWith("{")) {
+    try {
+      return JSON.parse(v) as T
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+function toItem(p0: ApiProduct): Item | null {
+  const p = { ...p0, media: asObj<ApiProduct["media"]>(p0.media), avatar: asObj<ApiProduct["avatar"]>(p0.avatar) }
   const raw = String(p.media?.model_file || p.model_path || "")
   const m = raw.match(/products\/([A-Za-z0-9_-]+)\/.+/)
   if (!m) return null
@@ -90,6 +106,9 @@ function defaultTargets(gender: string): BodyGender[] {
 
 function defaultKind(bodyPart: string): GarmentKind {
   if (bodyPart === "lower_body") return "lower"
+  if (bodyPart === "outer") return "outer"       // (2026-11-14) 상품 폼의 Body Part 값 그대로
+  if (bodyPart === "full_body") return "full"
+  if (bodyPart === "upper_body") return "upper"
   return "auto"
 }
 

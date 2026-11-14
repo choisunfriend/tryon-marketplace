@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { FormEvent, useEffect, useState } from "react"
+import { ModelUploadField } from "@/components/admin/model-upload-field"
 
 const categories = [
   {
@@ -1194,12 +1195,11 @@ export default function ProductForm({ product }: { product?: AdminProduct | null
             3D / Avatar
           </h2>
 
-          <UploadField
+          {/* (2026-11-14) .obj + .mtl + 텍스처를 한 번에 올리고 바로 굽기 — model-upload-field.tsx */}
+          <ModelUploadField
             name="model_file"
-            label="Model File (.obj / .glb)"
-            kind="model"
+            label="Model File (.obj + .mtl + 텍스처)"
             folder={uploadFolder}
-            accept=".obj,.mtl,.glb,.gltf"
             placeholder="파일을 고르거나 R2 경로 입력"
             resetSignal={resetSignal}
             initialValue={pick("model_file")}
