@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getAssetsBucket } from "@/lib/assets-bucket"
 import { canUseFolder, requireAdmin } from "@/lib/admin-guard"
+import { removeOldBakes } from "@/lib/model-cleanup"
 
 // ============================================================================
 // 3D 굽기 저장 — POST /api/bake
@@ -62,14 +63,23 @@ export async function POST(request: Request) {
   // 이전 manifest 를 이어받아 한쪽 몸만 다시 구워도 다른 쪽은 유지
   const manifestKey = `products/${folder}/fitted.json`
   let manifest: Record<string, unknown> = {}
+  let prevRaw: Record<string, unknown> | null = null
   const prev = await bucket.get(manifestKey)
   if (prev) {
     try {
       manifest = JSON.parse(await new Response(prev.body).text())
+      prevRaw = { ...manifest }
     } catch {
       manifest = {}
     }
     if (manifest.source !== source) manifest = {} // 원본이 바뀌었으면 새로 시작
+  }
+  // (2026-11-14) 이번에 덮어쓸 예전 구운 파일 — 저장이 끝나면 지운다 (원본이 바뀌었으면 예전 기록 전부)
+  const oldKeys: (string | undefined)[] = []
+  if (prevRaw) {
+    const bind = (prevRaw.bind as Record<string, string> | undefined) ?? {}
+    const gs = prevRaw.source !== source ? ["male", "female"] : genders
+    for (const g of gs) oldKeys.push(prevRaw[g] as string | undefined, bind[g])
   }
 
   const base = (source.split("/").pop() ?? "garment")
@@ -125,5 +135,10 @@ export async function POST(request: Request) {
     httpMetadata: { contentType: "application/json; charset=utf-8" },
   })
 
+  try {
+    await removeOldBakes(bucket, oldKeys, folder)
+  } catch {
+    /* 정리 실패는 저장 결과에 영향 없음 */
+  }
   return NextResponse.json({ success: true, manifest })
 }

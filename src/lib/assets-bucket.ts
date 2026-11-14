@@ -26,6 +26,7 @@ export interface AssetsBucket {
     value: ArrayBuffer | ReadableStream,
     options?: { httpMetadata?: { contentType?: string } }
   ): Promise<unknown>
+  delete?(keys: string | string[]): Promise<unknown>
 }
 
 export async function getAssetsBucket(): Promise<AssetsBucket | null> {

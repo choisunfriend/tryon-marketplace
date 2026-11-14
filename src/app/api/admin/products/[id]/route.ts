@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { getAssetsBucket } from "@/lib/assets-bucket"
+import { cleanupModelFolder } from "@/lib/model-cleanup"
 import { canTouchProduct, fail, noStore, requireAdmin } from "@/lib/admin-guard"
 import { deleteProduct, getProduct, MAX_PRODUCT_BODY, updateProduct } from "@/lib/products-db"
 
@@ -54,6 +56,7 @@ export async function PUT(request: Request, ctx: Ctx) {
   try {
     const product = await updateProduct(g.db, g.id, body)
     if (!product) return fail("상품이 없습니다", 404)
+    await cleanupAfterSave(product)
     return NextResponse.json({ success: true, product }, { headers: noStore })
   } catch (e) {
     return fail(e instanceof Error ? e.message : "수정하지 못했습니다", 500)
@@ -69,5 +72,18 @@ export async function DELETE(request: Request, ctx: Ctx) {
     return NextResponse.json({ success: true }, { headers: noStore })
   } catch (e) {
     return fail(e instanceof Error ? e.message : "삭제하지 못했습니다", 500)
+  }
+}
+
+// (2026-11-14) 저장 뒤 3D 폴더 정리 — 지금 쓰는 OBJ·MTL·텍스처·구운 파일만 남김 (model-cleanup.ts)
+async function cleanupAfterSave(product: Record<string, unknown> | null | undefined) {
+  try {
+    const media = product?.media as { model_file?: string } | string | null | undefined
+    const m = typeof media === "string" ? (JSON.parse(media) as { model_file?: string }) : media
+    const modelFile = m?.model_file || (product?.model_path as string | undefined) || ""
+    const bucket = await getAssetsBucket()
+    if (bucket && modelFile) await cleanupModelFolder(bucket, modelFile)
+  } catch {
+    /* 정리 실패는 저장 결과에 영향 없음 */
   }
 }
