@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { useEffect, useState } from "react"
-import { LayoutDashboard, Package, Users, RefreshCw, Shirt, LogOut, Store, Wallet, Scissors } from "lucide-react"
+import { LayoutDashboard, Package, Users, RefreshCw, LogOut, Store, Wallet, Scissors } from "lucide-react"
 import { TranslateGuard } from "@/components/translate-guard"
 
 // (2026-11-01) 메뉴는 Next <Link>(화면 안 이동) 대신 일반 <a>(페이지 새로 열기) — Cloudflare 배포에서 눌러도 반응 없는 문제를 피함.
@@ -18,7 +18,7 @@ const adminNav = [
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "정산", href: "/admin/settlements", icon: Wallet },
   { name: "R2 동기화", href: "/admin/sync", icon: RefreshCw, platform: true },
-  { name: "3D 굽기", href: "/admin/bake", icon: Shirt },
+  // (2026-11-14) 「3D 굽기」 메뉴 뺌 — 상품 등록·수정 화면의 3D 칸 옆 「굽기」 버튼으로 옮김 (화면 /admin/bake 은 남아 있음)
   { name: "미용실", href: "/admin/salons", icon: Scissors }, // (2026-11-01) 미용실 지도·헤어스타일
   { name: "Customers", href: "/admin/customers", icon: Users },
 ]
