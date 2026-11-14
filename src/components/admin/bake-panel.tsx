@@ -108,6 +108,19 @@ export function BakePanel({
   const [view, setView] = useState<BodyGender>("male")
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState<BakeManifest | null>(null)
+
+  // 지금 R2 에 저장된 굽기 기록 — 언제 무엇으로 구웠는지 패널에 보여 준다
+  useEffect(() => {
+    let cancelled = false
+    fetch(assetUrl(`products/${folder}/fitted.json`), { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => !cancelled && setSaved(m))
+      .catch(() => !cancelled && setSaved(null))
+    return () => {
+      cancelled = true
+    }
+  }, [folder])
 
   // 원본 받기 + 기본값 (원본·성별·옷 종류가 바뀌면 다시)
   useEffect(() => {
@@ -163,7 +176,8 @@ export function BakePanel({
         setResults({ ...out })
       }
       setView(targets[0])
-      setLoadMsg("굽기 완료 — 미리보기를 확인하고 저장하세요")
+      setLoadMsg("굽기 완료 — 저장 중…")
+      await save(out)
     } catch (e) {
       setLoadMsg(`굽기 실패: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
@@ -171,7 +185,8 @@ export function BakePanel({
     }
   }
 
-  async function save() {
+  async function save(res0: Partial<Record<BodyGender, BakeResult>> = results) {
+    const results = res0
     const genders = (Object.keys(results) as BodyGender[]).filter((g) => results[g])
     if (!genders.length) return
     setSaving(true)
@@ -193,8 +208,11 @@ export function BakePanel({
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`)
       onSaved?.(data.manifest)
-      setSaveMsg({ ok: true, text: "저장했습니다. GYEOL 앱에서 이 옷은 이제 구운 파일로 입혀집니다." })
+      setSaved(data.manifest)
+      setLoadMsg("굽기 완료")
+      setSaveMsg({ ok: true, text: "구워서 저장했습니다. GYEOL 앱에서 이 옷은 이제 이 파일로 입혀집니다." })
     } catch (e) {
+      setLoadMsg("굽기는 됐지만 저장 실패 — 아래 빨간 글씨를 확인하세요")
       setSaveMsg({ ok: false, text: `저장 실패: ${e instanceof Error ? e.message : String(e)}` })
     } finally {
       setSaving(false)
@@ -282,24 +300,31 @@ export function BakePanel({
           <button
             type="button"
             onClick={bake}
-            disabled={!garment || baking || !targets.length}
+            disabled={!garment || baking || saving || !targets.length}
             className="rounded-md bg-black px-4 py-2 text-sm text-white disabled:opacity-40"
           >
-            {baking ? "굽는 중…" : Object.keys(results).length ? "다시 굽기" : "굽기"}
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={!Object.keys(results).length || baking || saving}
-            className="rounded-md border px-4 py-2 text-sm disabled:opacity-40"
-          >
-            {saving ? "저장 중…" : "저장"}
+            {baking ? "굽는 중…" : saving ? "저장 중…" : Object.keys(results).length ? "다시 굽고 저장" : "굽고 저장"}
           </button>
           {saveMsg && (
-            <span className={`text-sm ${saveMsg.ok ? "text-green-700" : "font-medium text-red-600"}`}>{saveMsg.text}</span>
+            <span className={`text-sm ${saveMsg.ok ? "text-green-700" : "rounded bg-red-50 px-2 py-1 font-medium text-red-600"}`}>{saveMsg.text}</span>
           )}
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        지금 저장된 굽기:{" "}
+        {saved && (saved.male || saved.female) ? (
+          <>
+            {[saved.male && "남", saved.female && "여"].filter(Boolean).join("·")} ·{" "}
+            {saved.bakedAt ? new Date(saved.bakedAt).toLocaleString("ko-KR") : "시간 모름"}
+            {saved.source !== source && (
+              <b className="text-amber-700"> · 지금 OBJ와 다른 파일로 구운 기록이라 앱에서 안 쓰입니다 — 다시 구워 주세요</b>
+            )}
+          </>
+        ) : (
+          "없음 (앱이 원본을 자동으로 맞춰 입힙니다)"
+        )}
+      </p>
 
       {Object.keys(results).length > 0 && (
         <div className="flex gap-2">
