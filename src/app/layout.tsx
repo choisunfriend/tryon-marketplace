@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
+import { TranslateGuard } from "@/components/translate-guard"
 import { getLocale, getMessages } from "next-intl/server"
 import { Toaster } from "sonner"
 import { siteConfig } from "@/lib/config"
@@ -61,6 +62,8 @@ export default async function RootLayout({
             __html: JSON.stringify([organizationJsonLd, websiteJsonLd]),
           }}
         />
+        {/* (2026-11-14) 브라우저 자동 번역 중에 React 화면이 멈추지 않게 */}
+        <TranslateGuard />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

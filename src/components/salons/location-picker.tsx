@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import { useEffect, useRef } from "react"
 import type { Map as MlMap, Marker } from "maplibre-gl"
 import { MAP_STYLE_URL } from "@/lib/map"
+import { browserMapView, localizeMapLabels } from "@/lib/browser-locale"
 
 // (2026-11-01) 관리자용 위치 고르기 — 지도를 누르거나 핀을 끌어 위도·경도를 정함
 export function LocationPicker({
@@ -27,14 +28,17 @@ export function LocationPicker({
       const maplibregl = (await import("maplibre-gl")).default
       if (cancelled || !boxRef.current) return
       const has = lat != null && lng != null
+      // (2026-11-14) 위치를 아직 안 정했으면 서울 고정 대신 브라우저 지역에서 시작
+      const start = browserMapView()
       const map = new maplibregl.Map({
         container: boxRef.current,
         style: MAP_STYLE_URL,
-        center: has ? [lng!, lat!] : [127.0, 37.55],
-        zoom: has ? 15 : 10,
+        center: has ? [lng!, lat!] : (start?.center ?? [127.0, 37.55]),
+        zoom: has ? 15 : (start?.zoom ?? 10),
         attributionControl: { compact: true },
       })
       mapRef.current = map
+      map.on("load", () => localizeMapLabels(map)) // 지명을 브라우저 언어로
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right")
       const marker = new maplibregl.Marker({ color: "#c98b52", draggable: true })
       markerRef.current = marker

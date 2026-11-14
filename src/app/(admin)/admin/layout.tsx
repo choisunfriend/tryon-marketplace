@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { LayoutDashboard, Package, Users, RefreshCw, Shirt, LogOut, Store, Wallet, Scissors } from "lucide-react"
+import { TranslateGuard } from "@/components/translate-guard"
 
 // (2026-11-01) 메뉴는 Next <Link>(화면 안 이동) 대신 일반 <a>(페이지 새로 열기) — Cloudflare 배포에서 눌러도 반응 없는 문제를 피함.
 //   좁은 화면(폰)에서는 왼쪽 메뉴가 숨어 있어 위쪽 가로 메뉴를 따로 둠.
@@ -45,6 +46,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen">
+      {/* (2026-11-14) 관리자 화면 글자는 한국어 — lang="ko" 로 알려야 다른 언어 브라우저가 번역을 제안한다 */}
+      <TranslateGuard lang="ko" />
       <aside className="hidden w-64 border-r bg-neutral-50 lg:flex lg:flex-col">
         <div className="flex h-16 items-center border-b px-6">
           <a href="/admin" className="text-lg font-semibold">Admin</a>

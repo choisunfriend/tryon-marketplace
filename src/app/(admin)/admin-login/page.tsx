@@ -3,6 +3,7 @@
 
 import { FormEvent, Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { TranslateGuard } from "@/components/translate-guard"  // (2026-11-14) lang="ko" — 브라우저 번역 제안
 
 // 관리자 로그인 — 비밀번호는 서버(/api/admin/login)에서만 확인합니다.
 // (2026-11-01) 입점사 계정은 이메일+비밀번호. 이메일을 비우면 플랫폼 비상 비밀번호(ADMIN_PASSWORD)로 확인.
@@ -42,6 +43,7 @@ function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-lg border bg-white p-6 shadow-sm">
+      <TranslateGuard lang="ko" />
       <h1 className="text-xl font-semibold">관리자 로그인</h1>
       <input
         type="email"

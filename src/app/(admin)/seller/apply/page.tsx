@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- 관리자·신청 화면은 일반 <a> 이동 */
 
 import { FormEvent, useEffect, useRef, useState } from "react"
+import { TranslateGuard } from "@/components/translate-guard"  // (2026-11-14) lang="ko" — 브라우저 번역 제안
 
 // ============================================================================
 // (2026-11-01) 입점 신청 — /seller/apply (누구나)
@@ -103,6 +104,7 @@ export default function SellerApplyPage() {
 
   return (
     <main className="mx-auto max-w-xl p-6">
+      <TranslateGuard lang="ko" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
         <select

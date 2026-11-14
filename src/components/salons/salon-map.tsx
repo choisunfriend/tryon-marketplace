@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
 import { distanceKm, formatMinor, geocode, MAP_STYLE_URL } from "@/lib/map"
+import { browserMapView, localizeMapLabels } from "@/lib/browser-locale"
 
 // ============================================================================
 // (2026-11-01) 미용실 세계 지도
@@ -147,8 +148,9 @@ export function SalonMap() {
         map = new maplibregl.Map({
           container: boxRef.current,
           style: MAP_STYLE_URL,
-          center: WORLD.center,
-          zoom: WORLD.zoom,
+          // (2026-11-14) 브라우저 지역(ko-KR → 한국 등)에서 시작 — 모르는 지역이면 세계 지도
+          center: browserMapView()?.center ?? WORLD.center,
+          zoom: browserMapView()?.zoom ?? WORLD.zoom,
           attributionControl: { compact: true },
           cooperativeGestures: false,
         })
@@ -162,6 +164,7 @@ export function SalonMap() {
 
       map.on("load", () => {
         if (!map) return
+        localizeMapLabels(map) // (2026-11-14) 지명을 브라우저 언어로 (자동 번역은 지도 타일 글자를 못 바꿈)
         map.addSource("salons", {
           type: "geojson",
           data: toGeoJSON([]),
