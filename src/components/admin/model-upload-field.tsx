@@ -1,84 +1,41 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-  BODY_FILES,
-  DEFAULT_CLEARANCE,
-  bakeGarment,
-  buildBody,
-  parseObj,
-  serializeBinding,
-  type BodyFigure,
-  type BodyGender,
-  type GarmentKind,
-} from "@/lib/garment-bake"
+import { BakePanel } from "@/components/admin/bake-panel"
 
 // ============================================================================
-// (2026-11-14) 3D 옷 업로드 — 칸 3개(OBJ 필수 · MTL 선택 · 텍스처 이미지 선택) + 「굽기」
+// (2026-11-14) 3D 옷 업로드 칸 — OBJ 칸 · MTL 칸 따로 + 바로 옆 「3D 굽기」
 // ============================================================================
-// 블렌더에서 OBJ로 내보내면 .obj + .mtl(색) 두 개, 이미지 텍스처를 썼으면 이미지까지 세 개가 나온다.
-// 예전엔 .obj 하나만 받아서 앱에서 옷이 전부 같은 색으로 나왔다.
-//   · 세 칸 모두 같은 R2 폴더 products/{folder}/model/ 에 올린다 — MTL·텍스처는 OBJ 옆에 있어야 찾힌다
-//   · 칸마다 따로 올린다 — OBJ 를 먼저 올려 둔 뒤 MTL 만 나중에 올려도 된다
-//   · OBJ 칸의 값(= 상품의 model_file)은 OBJ 의 R2 키. MTL·이미지는 이름으로만 이어지므로 따로 저장할 값이 없다
-//   · 「굽기」: 올린 OBJ를 이 화면에서 바로 남/여 표준 몸에 맞춰 구워 저장(fitted.json).
-//     성별·옷 종류는 폼의 Model Gender / Body Part 값을 읽는다.
-//     구워도 vt·mtllib·usemtl 줄은 그대로 남으므로(garment-bake.writeObj) 색도 그대로다.
+// 블렌더에서 OBJ로 내보내면 .obj + .mtl(색), 이미지 텍스처를 썼으면 이미지까지 나온다.
+//   · 「3D 파일」 칸: .obj (또는 .glb/.gltf) 1개 → 입력칸 값(= 상품의 model_file)이 그 R2 키
+//   · 「MTL / 텍스처」 칸: .mtl 1개 + 텍스처 이미지(png/jpg/webp) 여러 장
+//   · 둘 다 같은 R2 폴더 products/{folder}/model/ 에 올린다 — MTL·텍스처는 OBJ 옆에 있어야 찾힌다
+//   · 「3D 굽기」: 관리자 「3D 굽기」 메뉴와 같은 패널(크기·높이·여유 조절 + 3D 미리보기 + 저장)을
+//     이 칸 바로 아래에 펼친다. 성별·옷 종류는 폼의 Model Gender / Body Part 값을 따라간다.
 // ============================================================================
-
-type Slot = "obj" | "mtl" | "tex"
 
 interface Uploaded {
-  name: string // 저장된 파일 이름 (서버가 safeName 으로 바꾼 이름)
+  name: string // 저장된 파일 이름
   key: string
-  refs: string[] // OBJ → mtllib 이름들 · MTL → map_Kd 이미지 이름들
-}
-
-const SLOT: Record<Slot, { label: string; accept: string; exts: string[]; hint: string }> = {
-  obj: { label: "3D 파일 (.obj) · 필수", accept: ".obj", exts: ["obj"], hint: "옷 모양" },
-  mtl: { label: "색 파일 (.mtl) · 선택", accept: ".mtl", exts: ["mtl"], hint: "없으면 회색" },
-  tex: {
-    label: "텍스처 이미지 · 선택",
-    accept: "image/png,image/jpeg,image/webp",
-    exts: ["png", "jpg", "jpeg", "webp"],
-    hint: "MTL 이 이미지를 쓸 때만",
-  },
+  refs: string[]
+  ext: string
 }
 
 const extOf = (n: string) => (n.split(".").pop() ?? "").toLowerCase()
-const baseOf = (k: string) => k.split("?")[0].split("/").pop() ?? ""
-const assetUrl = (key: string) => "/api/assets/" + key.split("/").map(encodeURIComponent).join("/")
+const IMG = ["png", "jpg", "jpeg", "webp"]
+const MODEL = ["obj", "glb", "gltf"]
+const MAX_TEXTURES = 8
 
-const bodyCache = new Map<BodyGender, Promise<BodyFigure>>()
-function loadBody(g: BodyGender): Promise<BodyFigure> {
-  if (!bodyCache.has(g)) {
-    const p = fetch(BODY_FILES[g].url)
-      .then((r) => {
-        if (!r.ok) throw new Error(`몸 파일을 못 받았습니다 (${r.status})`)
-        return r.text()
-      })
-      .then((t) => buildBody(g, t))
-    p.catch(() => bodyCache.delete(g)) // 실패한 약속은 남기지 않음 — 다음에 다시 받기
-    bodyCache.set(g, p)
-  }
-  return bodyCache.get(g)!
+async function uploadOne(file: File, folder: string): Promise<Uploaded> {
+  const body = new FormData()
+  body.append("file", file)
+  body.append("kind", "model")
+  body.append("folder", folder)
+  const res = await fetch("/api/assets/upload", { method: "POST", body })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.success) throw new Error(`${file.name}: ${data.error ?? "업로드 실패"}`)
+  return { name: data.name, key: data.key, refs: Array.isArray(data.refs) ? data.refs : [], ext: extOf(data.name) }
 }
-
-function targetsFor(gender: string): BodyGender[] {
-  if (gender === "female") return ["female"]
-  if (gender === "male") return ["male"]
-  return ["male", "female"]
-}
-
-function kindFor(bodyPart: string): GarmentKind {
-  if (bodyPart === "lower_body") return "lower"
-  if (bodyPart === "outer") return "outer"
-  if (bodyPart === "full_body") return "full"
-  if (bodyPart === "upper_body") return "upper"
-  return "auto"
-}
-
-const nextFrame = () => new Promise((r) => setTimeout(r, 30))
 
 export function ModelUploadField({
   name,
@@ -95,201 +52,204 @@ export function ModelUploadField({
   resetSignal: number
   initialValue?: string
 }) {
-  const [value, setValue] = useState(initialValue) // OBJ 의 R2 키 (폼에 model_file 로 들어감)
-  const [up, setUp] = useState<Partial<Record<Slot, Uploaded>>>({})
-  const [status, setStatus] = useState<Partial<Record<Slot, string>>>({})
-  const [busy, setBusy] = useState<Slot | "bake" | null>(null)
-  const [bakeMsg, setBakeMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [value, setValue] = useState(initialValue)
+  const [model, setModel] = useState<Uploaded | null>(null)
+  const [mats, setMats] = useState<Uploaded[]>([]) // .mtl + 텍스처
+  const [modelStatus, setModelStatus] = useState("")
+  const [matStatus, setMatStatus] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [bakeOpen, setBakeOpen] = useState(false)
+  const [formVals, setFormVals] = useState({ gender: "unisex", bodyPart: "" })
   const wrap = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setValue(initialValue)
-    setUp({})
-    setStatus({})
-    setBakeMsg(null)
+    setModel(null)
+    setMats([])
+    setModelStatus("")
+    setMatStatus("")
+    setBakeOpen(false)
   }, [resetSignal, initialValue])
 
-  async function upload(slot: Slot, file: File | undefined) {
-    if (!file || !folder) return
-    if (!SLOT[slot].exts.includes(extOf(file.name))) {
-      setStatus((s) => ({ ...s, [slot]: `이 칸에는 ${SLOT[slot].exts.join(" / ")} 파일만 올릴 수 있습니다` }))
-      return
-    }
-    setBusy(slot)
-    setBakeMsg(null)
-    setStatus((s) => ({ ...s, [slot]: "업로드 중…" }))
-    try {
-      const body = new FormData()
-      body.append("file", file)
-      body.append("kind", "model")
-      body.append("folder", folder)
-      const res = await fetch("/api/assets/upload", { method: "POST", body })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.success) throw new Error(data.error ?? "업로드 실패")
-      const u: Uploaded = { name: data.name, key: data.key, refs: Array.isArray(data.refs) ? data.refs : [] }
-      setUp((s) => ({ ...s, [slot]: u }))
-      if (slot === "obj") setValue(u.key)
-      setStatus((s) => ({ ...s, [slot]: `올림 · ${u.name} · ${(file.size / 1024).toFixed(0)}KB` }))
-    } catch (e) {
-      setStatus((s) => ({ ...s, [slot]: e instanceof Error ? e.message : "업로드 실패" }))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  // 짝 맞춤 안내 — OBJ 가 찾는 MTL 이름, MTL 이 찾는 이미지 이름이 이번에 올린 것과 맞는지
-  const notes: string[] = []
-  const objRefs = up.obj?.refs ?? []
-  const mtlName = up.mtl?.name
-  if (up.obj && objRefs.length && !mtlName) {
-    notes.push(`OBJ가 색 파일 ${objRefs.join(", ")} 을(를) 찾습니다 — 색 파일 칸에 올리지 않으면 앱에서 회색으로 나옵니다`)
-  }
-  if (mtlName && up.obj && objRefs.length && !objRefs.some((r) => r.toLowerCase() === mtlName.toLowerCase())) {
-    notes.push(`OBJ는 ${objRefs.join(", ")} 을(를) 찾는데 올린 색 파일은 ${mtlName} 입니다 — 이름이 같아야 이어집니다`)
-  }
-  if (mtlName && up.obj && !objRefs.length) {
-    notes.push(`OBJ 안에 mtllib 줄이 없어 색 파일 ${mtlName} 과(와) 이어지지 않습니다 — 블렌더에서 Materials 를 켜고 다시 내보내세요`)
-  }
-  const texRefs = up.mtl?.refs ?? []
-  if (texRefs.length && !up.tex) {
-    notes.push(`색 파일이 텍스처 ${texRefs.join(", ")} 을(를) 씁니다 — 이미지 칸에 올리지 않으면 무늬 없이 색만 나옵니다`)
-  }
-  if (up.tex && texRefs.length && !texRefs.some((r) => r.toLowerCase() === up.tex!.name.toLowerCase())) {
-    notes.push(`색 파일은 ${texRefs.join(", ")} 을(를) 찾는데 올린 이미지는 ${up.tex.name} 입니다 — 이름이 같아야 이어집니다`)
-  }
-
-  // 폼의 Model Gender / Body Part 값 — 이 칸 아래에 있어 상태로 못 받으므로 폼에서 직접 읽는다
-  function formValue(field: string): string {
+  // 폼의 Model Gender / Body Part — 이 칸 아래에 있어 상태로 못 받으므로 폼에서 직접 읽고, 바뀌면 따라간다
+  useEffect(() => {
     const form = wrap.current?.closest("form")
-    const el = form?.elements.namedItem(field) as HTMLSelectElement | HTMLInputElement | null
-    return el?.value ?? ""
-  }
+    if (!form) return
+    const read = () => {
+      const g = form.elements.namedItem("avatar_gender") as HTMLSelectElement | null
+      const b = form.elements.namedItem("body_part") as HTMLSelectElement | null
+      setFormVals({ gender: g?.value || "unisex", bodyPart: b?.value || "" })
+    }
+    read()
+    form.addEventListener("change", read)
+    return () => form.removeEventListener("change", read)
+  }, [])
 
-  async function bake() {
-    const source = value.trim().split("?")[0]
-    if (!folder || !source) return
-    setBakeMsg(null)
-    if (!/\.obj$/i.test(source)) {
-      setBakeMsg({ ok: false, text: "OBJ 파일만 구울 수 있습니다" })
+  // 빠진 짝 알려 주기 — OBJ 가 가리키는 MTL, MTL 이 가리키는 텍스처
+  const have = new Set(mats.map((f) => f.name.toLowerCase()))
+  const warn: string[] = []
+  for (const r of model?.refs ?? [])
+    if (!have.has(r.toLowerCase())) warn.push(`OBJ가 색 파일 ${r} 을(를) 찾습니다 — 오른쪽 MTL 칸에 올려 주세요`)
+  for (const m of mats)
+    for (const r of m.refs)
+      if (!have.has(r.toLowerCase())) warn.push(`MTL이 텍스처 ${r} 을(를) 찾습니다 — MTL 칸에 이미지도 같이 올려 주세요`)
+
+  async function handleModel(list: FileList | null) {
+    const file = list?.[0]
+    if (!file || !folder) return
+    if (!MODEL.includes(extOf(file.name))) {
+      setModelStatus("3D 파일은 .obj (또는 .glb/.gltf) 만 올릴 수 있습니다 — .mtl 은 오른쪽 칸에")
       return
     }
-    if (!source.startsWith(`products/${folder}/`)) {
-      setBakeMsg({ ok: false, text: "이 상품 폴더에 올린 OBJ만 구울 수 있습니다 — OBJ를 다시 올려 주세요" })
-      return
-    }
-    const targets = targetsFor(formValue("avatar_gender"))
-    const kind = kindFor(formValue("body_part"))
-    const clearance = DEFAULT_CLEARANCE[kind === "auto" ? "upper" : kind]
-    setBusy("bake")
+    setBusy(true)
     try {
-      setBakeMsg({ ok: true, text: "원본 받는 중…" })
-      const r = await fetch(assetUrl(source), { cache: "no-store" })
-      if (!r.ok) throw new Error(`원본 파일이 R2에 없습니다 (${r.status})`)
-      const garment = parseObj(await r.text())
-      if (!garment.pos.length) throw new Error("OBJ에 정점이 없습니다")
-
-      const results: Partial<Record<BodyGender, ReturnType<typeof bakeGarment>>> = {}
-      for (const g of targets) {
-        setBakeMsg({ ok: true, text: `${g === "male" ? "남자" : "여자"} 몸에 굽는 중…` })
-        await nextFrame() // 화면이 멈춘 것처럼 보이지 않게 한 번 그려 줌
-        results[g] = bakeGarment(garment, await loadBody(g), { kind, scaleMul: 1, yShift: 0, clearance })
-      }
-
-      setBakeMsg({ ok: true, text: "저장 중…" })
-      const res = await fetch("/api/bake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          folder,
-          source,
-          results: Object.fromEntries(targets.map((g) => [g, results[g]!.text])),
-          binds: Object.fromEntries(targets.map((g) => [g, serializeBinding(results[g]!.binding)])),
-          params: Object.fromEntries(
-            targets.map((g) => [g, { kind: results[g]!.place.kind, scaleMul: 1, yShift: 0, clearance }])
-          ),
-        }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`)
-      const summary = targets
-        .map((g) => {
-          const c = results[g]!.conform
-          return `${g === "male" ? "남" : "여"}: 몸 뚫은 정점 ${c.insideBefore.toLocaleString()}→${c.insideAfter.toLocaleString()}`
-        })
-        .join(" · ")
-      setBakeMsg({ ok: true, text: `구워서 저장했습니다 (${summary}). 앱에서 이 옷은 구운 파일로 입혀집니다.` })
+      setModelStatus(`업로드 중… ${file.name}`)
+      const up = await uploadOne(file, folder)
+      setModel(up)
+      setValue(up.key)
+      setModelStatus(`올림 · ${up.name}`)
     } catch (e) {
-      setBakeMsg({ ok: false, text: `굽기 실패: ${e instanceof Error ? e.message : String(e)}` })
+      setModelStatus(e instanceof Error ? e.message : "업로드 실패")
     } finally {
-      setBusy(null)
+      setBusy(false)
     }
   }
 
-  const hasObj = /\.obj(\?|$)/i.test(value.trim())
-  const canBake = !!folder && hasObj && !busy
-
-  function fileRow(slot: Slot) {
-    const shown = slot === "obj" ? (hasObj ? baseOf(value) : "") : up[slot]?.name ?? ""
-    return (
-      <div key={slot} className="rounded border p-2">
-        <div className="mb-1 flex items-baseline justify-between gap-2">
-          <span className="text-xs font-medium">{SLOT[slot].label}</span>
-          <span className="text-[11px] text-muted-foreground">{SLOT[slot].hint}</span>
-        </div>
-        <input
-          type="file"
-          accept={SLOT[slot].accept}
-          disabled={!folder || !!busy}
-          onChange={(e) => {
-            void upload(slot, e.target.files?.[0])
-            e.target.value = ""
-          }}
-          className="w-full text-xs"
-        />
-        <p className="mt-1 truncate text-[11px] text-muted-foreground">
-          {busy === slot ? "업로드 중…" : status[slot] ?? (shown ? `현재: ${shown}` : " ")}
-        </p>
-      </div>
-    )
+  async function handleMats(list: FileList | null) {
+    if (!list || !list.length || !folder) return
+    const picked = Array.from(list)
+    const mtls = picked.filter((f) => extOf(f.name) === "mtl")
+    const bad = picked.find((f) => !["mtl", ...IMG].includes(extOf(f.name)))
+    if (bad) {
+      setMatStatus(`올릴 수 없는 파일: ${bad.name} (.mtl · png/jpg/webp 만)`)
+      return
+    }
+    if (mtls.length > 1) {
+      setMatStatus(".mtl 은 1개만 골라 주세요")
+      return
+    }
+    if (picked.length - mtls.length > MAX_TEXTURES) {
+      setMatStatus(`텍스처 이미지는 ${MAX_TEXTURES}장까지 올릴 수 있습니다`)
+      return
+    }
+    setBusy(true)
+    const done: Uploaded[] = []
+    try {
+      for (const [i, file] of picked.entries()) {
+        setMatStatus(`업로드 중… (${i + 1}/${picked.length}) ${file.name}`)
+        done.push(await uploadOne(file, folder))
+      }
+      setMatStatus("")
+    } catch (e) {
+      setMatStatus(e instanceof Error ? e.message : "업로드 실패")
+    } finally {
+      // 새 MTL 을 올리면 예전 MTL 은 목록에서 뺀다 (이미지는 이름이 같을 때만 바꿈)
+      setMats((cur) => {
+        const newMtl = done.some((f) => f.ext === "mtl")
+        const names = new Set(done.map((f) => f.name.toLowerCase()))
+        return [...cur.filter((f) => !(newMtl && f.ext === "mtl") && !names.has(f.name.toLowerCase())), ...done]
+      })
+      setBusy(false)
+    }
   }
+
+  const source = value.trim().split("?")[0]
+  const isObj = /\.obj$/i.test(source)
+  const inFolder = !!folder && source.startsWith(`products/${folder}/`)
+  const canBake = isObj && inFolder && !busy
+  const bakeTitle = !isObj
+    ? "먼저 .obj 파일을 올려 주세요"
+    : !inFolder
+      ? "이 상품 폴더에 올린 OBJ만 구울 수 있습니다 — 파일을 다시 올려 주세요"
+      : "GYEOL 표준 몸에 맞춰 굽기 (크기·높이·여유 조절 + 미리보기)"
+
+  const box = "rounded-lg border p-3"
 
   return (
-    <div ref={wrap}>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      <div className="flex gap-2">
-        <input
-          name={name}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value)
-            setBakeMsg(null)
-          }}
-          placeholder={placeholder}
-          className="w-full rounded border p-2"
-        />
-        <button
-          type="button"
-          onClick={bake}
-          disabled={!canBake}
-          title="올린 OBJ를 GYEOL 표준 몸(Model Gender)에 맞춰 굽고 저장합니다"
-          className="shrink-0 rounded bg-black px-4 text-sm text-white disabled:opacity-40"
-        >
-          {busy === "bake" ? "굽는 중…" : "굽기"}
-        </button>
+    <div ref={wrap} className="space-y-2">
+      <label className="block text-sm font-medium">{label}</label>
+
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+        {/* 3D 파일 (.obj) */}
+        <div className={box}>
+          <div className="mb-1 text-xs font-medium">① 3D 파일 (.obj)</div>
+          <input
+            name={name}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+            className="w-full rounded border p-2 text-sm"
+          />
+          <input
+            type="file"
+            accept=".obj,.glb,.gltf"
+            disabled={!folder || busy}
+            onChange={(e) => {
+              void handleModel(e.target.files)
+              e.target.value = ""
+            }}
+            className="mt-2 block text-xs"
+          />
+          {modelStatus && <p className="mt-1 text-xs text-muted-foreground">{modelStatus}</p>}
+        </div>
+
+        {/* MTL + 텍스처 */}
+        <div className={box}>
+          <div className="mb-1 text-xs font-medium">② 색 파일 (.mtl) + 텍스처 이미지</div>
+          <input
+            type="file"
+            multiple
+            accept=".mtl,image/png,image/jpeg,image/webp"
+            disabled={!folder || busy}
+            onChange={(e) => {
+              void handleMats(e.target.files)
+              e.target.value = ""
+            }}
+            className="block text-xs"
+          />
+          {mats.length > 0 && (
+            <ul className="mt-2 space-y-0.5 text-xs">
+              {mats.map((f) => (
+                <li key={f.key} className="truncate">
+                  {f.ext === "mtl" ? "🎨" : "🖼"} {f.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          {matStatus && <p className="mt-1 text-xs text-muted-foreground">{matStatus}</p>}
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            .mtl 1개와 텍스처 이미지를 함께 고르세요. 블렌더 OBJ 내보내기에서 Path Mode 를 Copy 로 두면 이미지가 같이 나옵니다.
+          </p>
+        </div>
+
+        {/* 3D 굽기 */}
+        <div className="flex md:items-start">
+          <button
+            type="button"
+            onClick={() => setBakeOpen((o) => !o)}
+            disabled={!canBake && !bakeOpen}
+            title={bakeTitle}
+            className="w-full rounded-lg bg-black px-5 py-3 text-sm text-white disabled:opacity-40 md:w-auto"
+          >
+            {bakeOpen ? "3D 굽기 닫기" : "3D 굽기"}
+          </button>
+        </div>
       </div>
 
-      <div className="mt-2 grid gap-2 sm:grid-cols-3">{(["obj", "mtl", "tex"] as Slot[]).map(fileRow)}</div>
-
-      <p className="mt-1 text-xs text-muted-foreground">
-        블렌더 OBJ 내보내기에서 나온 .obj 와 .mtl 을 각 칸에 올리세요. 텍스처 이미지를 썼다면 내보낼 때 Path Mode 를 Copy 로 두면 이미지가 옆에 같이 나옵니다.
-      </p>
-      {notes.map((w) => (
-        <p key={w} className="mt-1 text-xs text-amber-700">
+      {model?.ext === "obj" && !mats.some((f) => f.ext === "mtl") && warn.length === 0 && (
+        <p className="text-xs text-amber-700">MTL 없이 OBJ만 올렸습니다 — 앱에서 회색 단색으로 나옵니다.</p>
+      )}
+      {warn.map((w) => (
+        <p key={w} className="text-xs text-amber-700">
           {w}
         </p>
       ))}
-      {bakeMsg && (
-        <p className={`mt-1 text-xs ${bakeMsg.ok ? "text-green-700" : "font-medium text-red-600"}`}>{bakeMsg.text}</p>
+      {!folder && <p className="text-xs text-muted-foreground">상품 이름(폴더)을 먼저 정하면 파일을 올릴 수 있습니다.</p>}
+
+      {bakeOpen && canBake && (
+        <div className="rounded-lg border bg-neutral-50/50 p-4">
+          <BakePanel folder={folder} source={source} gender={formVals.gender} bodyPart={formVals.bodyPart} />
+        </div>
       )}
     </div>
   )

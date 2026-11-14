@@ -1195,10 +1195,10 @@ export default function ProductForm({ product }: { product?: AdminProduct | null
             3D / Avatar
           </h2>
 
-          {/* (2026-11-14) .obj + .mtl + 텍스처를 한 번에 올리고 바로 굽기 — model-upload-field.tsx */}
+          {/* (2026-11-14) OBJ 칸 · MTL 칸 따로 + 옆에 3D 굽기 패널 — model-upload-field.tsx */}
           <ModelUploadField
             name="model_file"
-            label="Model File (.obj + .mtl + 텍스처)"
+            label="3D 옷 (OBJ + MTL)"
             folder={uploadFolder}
             placeholder="파일을 고르거나 R2 경로 입력"
             resetSignal={resetSignal}
