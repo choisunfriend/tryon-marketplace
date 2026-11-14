@@ -100,6 +100,7 @@ export function BakePanel({
   const [scaleMul, setScaleMul] = useState(1)
   const [yShift, setYShift] = useState(0)
   const [clearance, setClearance] = useState<number | null>(null)
+  const [keepAsIs, setKeepAsIs] = useState(true)
 
   const [baking, setBaking] = useState(false)
   const [results, setResults] = useState<Partial<Record<BodyGender, BakeResult>>>({})
@@ -158,7 +159,7 @@ export function BakePanel({
         await nextFrame()
         const body = await loadBody(g)
         setBodies((s) => ({ ...s, [g]: body }))
-        out[g] = bakeGarment(garment, body, { kind, scaleMul, yShift, clearance: effClearance })
+        out[g] = bakeGarment(garment, body, { kind, scaleMul, yShift, clearance: effClearance, keepAsIs })
         setResults({ ...out })
       }
       setView(targets[0])
@@ -185,7 +186,7 @@ export function BakePanel({
           results: Object.fromEntries(genders.map((g) => [g, results[g]!.text])),
           binds: Object.fromEntries(genders.map((g) => [g, serializeBinding(results[g]!.binding)])),
           params: Object.fromEntries(
-            genders.map((g) => [g, { kind: results[g]!.place.kind, scaleMul, yShift, clearance: effClearance }])
+            genders.map((g) => [g, { kind: results[g]!.place.kind, scaleMul, yShift, clearance: effClearance, keepAsIs }])
           ),
         }),
       })
@@ -261,6 +262,15 @@ export function BakePanel({
           <input className={slider} type="range" min={-0.15} max={0.15} step={0.005}
             value={yShift} onChange={(e) => setYShift(+e.target.value)} />
         </div>
+        <label className="flex items-start gap-2 text-sm md:col-span-2">
+          <input type="checkbox" className="mt-1" checked={keepAsIs} onChange={(e) => setKeepAsIs(e.target.checked)} />
+          <span>
+            블렌더에서 GYEOL 몸에 맞춰 만든 옷이면 원본 크기 그대로 두기
+            <span className="block text-xs text-muted-foreground">
+              끄면 어깨폭(하의는 허리폭) 기준으로 크기를 자동으로 다시 맞춥니다. 원본이 몸과 다른 위치·크기면 켜 둬도 자동 맞춤합니다.
+            </span>
+          </span>
+        </label>
         <div className="md:col-span-2">
           <label className="text-xs text-muted-foreground">
             몸과의 여유 {effClearance.toFixed(3)} {clearance === null && "(종류 기본값)"}
@@ -310,7 +320,7 @@ export function BakePanel({
 
       {r && (
         <p className="text-xs text-muted-foreground">
-          {r.place.kind === "asis" ? "이미 몸에 맞춰진 옷 — 위치·크기 그대로" : `${KIND_LABEL[r.place.kind as GarmentKind] ?? r.place.kind}로 맞춤`} · 배율 {r.place.scale.toFixed(3)}
+          {r.place.kind === "asis" ? "이미 몸에 맞춰진 옷 — 원본 크기 기준" : `${KIND_LABEL[r.place.kind as GarmentKind] ?? r.place.kind}로 맞춤`} · 배율 {r.place.scale.toFixed(3)}
           {r.place.rotatedZUp && " · Z-위 파일을 세움"}
           {r.place.note && ` · ${r.place.note}`} · 몸을 뚫은 정점{" "}
           {r.conform.insideBefore.toLocaleString()} → {r.conform.insideAfter.toLocaleString()}개

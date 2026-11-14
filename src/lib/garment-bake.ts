@@ -185,6 +185,9 @@ export interface PlaceOptions {
   kind: GarmentKind
   scaleMul: number // 손 조절 배율 (1 = 자동값 그대로)
   yShift: number // 몸 키 대비 위아래 이동 (+ = 위)
+  // (2026-11-14) 이미 몸 좌표에 맞춰 만든 옷이면 자동 크기 맞춤을 건너뛸지 (기본 true)
+  // 예전엔 kind 가 "auto" 일 때만 건너뛰어서, 폼에서 상의를 고르면 블렌더 1.0 옷도 어깨폭 기준으로 다시 키웠다
+  keepAsIs?: boolean
 }
 
 export interface PlaceReport {
@@ -234,8 +237,19 @@ export function placeGarment(src: Float32Array, body: BodyFigure, opt: PlaceOpti
   const pos = new Float32Array(src)
   let gb = boxOf(pos)
   // 이미 이 몸 좌표에 맞춰 만든 옷(GYEOL conform.py·MakeHuman 의상 등)은 옮기지 않는다
-  if (opt.kind === "auto" && opt.scaleMul === 1 && opt.yShift === 0 && isInBodySpace(gb, body)) {
-    return { pos, report: { kind: "asis", scale: 1, rotatedZUp: false, note: "이미 몸 좌표에 있는 옷 — 그대로 둠" } }
+  // 크기·높이 슬라이더는 원본 위치를 기준으로(목 중심·옷 꼭대기) 그대로 적용한다
+  if ((opt.keepAsIs ?? true) && isInBodySpace(gb, body)) {
+    const s = opt.scaleMul
+    const dy = opt.yShift * (body.cutY - body.box.minY)
+    if (s !== 1 || dy !== 0) {
+      const cx = (gb.minX + gb.maxX) / 2, cz = (gb.minZ + gb.maxZ) / 2, ty = gb.maxY
+      for (let i = 0; i < pos.length; i += 3) {
+        pos[i] = (pos[i] - cx) * s + cx
+        pos[i + 1] = (pos[i + 1] - ty) * s + ty + dy
+        pos[i + 2] = (pos[i + 2] - cz) * s + cz
+      }
+    }
+    return { pos, report: { kind: "asis", scale: s, rotatedZUp: false, note: "이미 몸 좌표에 있는 옷 — 원본 크기 기준" } }
   }
   let rotatedZUp = false
   if (gb.maxZ - gb.minZ > 1.5 * (gb.maxY - gb.minY)) {
