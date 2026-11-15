@@ -28,6 +28,12 @@
       "name": "LOGIN_LIMITER",
       "namespace_id": "1101",
       "simple": { "limit": 10, "period": 60 }
+    },
+    // (2026-11-15) 고객 앱 — 가입 없이 시작·로그인 (IP 당 1분 20번)
+    {
+      "name": "CUSTOMER_LIMITER",
+      "namespace_id": "1102",
+      "simple": { "limit": 20, "period": 60 }
     }
   ],
   "r2_buckets": [
