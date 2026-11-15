@@ -28,6 +28,9 @@ export function LocationPicker({
     let cancelled = false
     ;(async () => {
       const maplibregl = await import("maplibre-gl")
+      // (2026-11-15) MapLibre v6 는 지도 계산 파일(worker)을 자기 옆에서 찾는데, 빌드가 이름을 바꿔 못 찾음
+      //   → public/maplibre/ 에 복사해 둔 것을 쓰게 함 (package.json 의 prebuild 가 버전에 맞춰 복사)
+      maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs")
       if (cancelled || !boxRef.current) return
       const has = lat != null && lng != null
       // (2026-11-14) 위치를 아직 안 정했으면 서울 고정 대신 브라우저 지역에서 시작
