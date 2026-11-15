@@ -11,6 +11,7 @@ import {
 import { getProductsDb } from "@/lib/products-db"
 import { findUserByEmail, getStore, touchLogin } from "@/lib/stores-db"
 import { withLang } from "@/i18n/api"
+import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { bi } from "@/i18n/l"
 
 // ============================================================================
@@ -36,6 +37,22 @@ function clientIp(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? "unknown"
 }
 
+
+// (2026-11-15 보안) Cloudflare 시도 제한(wrangler.jsonc 의 LOGIN_LIMITER) — 모든 서버가 같이 셈.
+//   바인딩이 없으면(로컬 등) 아래 메모리 카운터만 씀.
+type Limiter = { limit(opts: { key: string }): Promise<{ success: boolean }> }
+async function overEdgeLimit(ip: string): Promise<boolean> {
+  try {
+    const { env } = await getCloudflareContext({ async: true })
+    const lim = (env as unknown as { LOGIN_LIMITER?: Limiter }).LOGIN_LIMITER
+    if (!lim) return false
+    const { success } = await lim.limit({ key: `login:${ip}` })
+    return !success
+  } catch {
+    return false
+  }
+}
+
 async function handlePOST(request: Request) {
   if (!isSameOriginWrite(request)) {
     return NextResponse.json({ success: false, error: bi("허용되지 않은 요청 출처입니다", "Request origin not allowed") }, { status: 403 })
@@ -51,6 +68,12 @@ async function handlePOST(request: Request) {
   const ip = clientIp(request)
   const now = Date.now()
   const rec = fails.get(ip)
+  if (await overEdgeLimit(ip)) {
+    return NextResponse.json(
+      { success: false, error: bi("시도가 너무 많습니다. 1분 뒤 다시 해 주세요", "Too many attempts. Try again in a minute") },
+      { status: 429, headers: { "Retry-After": "60" } }
+    )
+  }
   if (rec && now - rec.at < WINDOW_MS && rec.n >= MAX_FAILS) {
     return NextResponse.json(
       { success: false, error: bi("시도가 너무 많습니다. 10분 뒤 다시 해 주세요", "Too many attempts. Try again in 10 minutes") },
