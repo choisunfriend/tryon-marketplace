@@ -110,6 +110,14 @@ async function route(request: NextRequest, lang: Locale | null): Promise<NextRes
   const path = request.nextUrl.pathname
   const admin = isAdminPath(path)
 
+  // (2026-11-15) 손님 로그인·내 계정 화면은 아직 없음(템플릿 가짜) → 쇼핑 화면으로
+  if (path === "/auth" || path.startsWith("/auth/") || path === "/account" || path.startsWith("/account/")) {
+    const to = request.nextUrl.clone()
+    to.pathname = "/shop"
+    to.search = ""
+    return NextResponse.redirect(to)
+  }
+
   if (isSellerPath(path)) return securityHeaders(nextWithLang(request, lang), true, true)
 
   if (admin) {

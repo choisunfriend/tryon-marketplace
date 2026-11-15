@@ -23,6 +23,9 @@ import { useCartStore } from "@/store/cart"
 import { useAuthStore } from "@/store/auth"
 import { useRouter } from "next/navigation"
 
+// (2026-11-15) 손님 로그인은 아직 없음 — 진짜 로그인을 붙이면 true 로
+const CUSTOMER_LOGIN = false
+
 interface HeaderProps {
   /** All categories (top-level + subcategories) from the repository layer */
   categories?: Category[]
@@ -181,7 +184,7 @@ export function Header({ categories = [] }: HeaderProps) {
           </Link>
 
           {/* User menu — desktop only */}
-          {mounted && isAuthenticated ? (
+          {CUSTOMER_LOGIN && mounted && isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="hidden h-10 w-10 items-center justify-center rounded-md hover:bg-accent lg:inline-flex"
@@ -213,7 +216,7 @@ export function Header({ categories = [] }: HeaderProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          ) : CUSTOMER_LOGIN ? (
             <Link
               href="/auth/login"
               className="hidden h-10 w-10 items-center justify-center rounded-md hover:bg-accent lg:inline-flex"
@@ -221,7 +224,7 @@ export function Header({ categories = [] }: HeaderProps) {
             >
               <User className="h-5 w-5" />
             </Link>
-          )}
+          ) : null}
 
           {/* Cart */}
           <button

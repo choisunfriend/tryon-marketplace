@@ -21,9 +21,7 @@ export const shopLinks: NavItem[] = [
 ]
 
 export const accountLinks: NavItem[] = [
-  { name: "My Account", ko: "내 계정", href: "/account" },
   { name: "Wishlist", ko: "찜 목록", href: "/wishlist" },
-  { name: "Orders", ko: "주문 내역", href: "/account/orders" },
 ]
 
 export const infoLinks: NavItem[] = [

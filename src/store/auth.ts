@@ -16,44 +16,10 @@ interface AuthState {
   removeAddress: (id: string) => void
 }
 
-// Demo users — in production, this comes from your auth provider
-const DEMO_USERS: Array<User & { password: string }> = [
-  {
-    id: "user-1",
-    email: "admin@example.com",
-    firstName: "Admin",
-    lastName: "User",
-    role: "admin",
-    addresses: [],
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    password: "password123",
-  },
-  {
-    id: "user-2",
-    email: "demo@example.com",
-    firstName: "Jane",
-    lastName: "Smith",
-    role: "customer",
-    addresses: [
-      {
-        id: "addr-demo-1",
-        type: "shipping",
-        firstName: "Jane",
-        lastName: "Smith",
-        line1: "123 Main Street",
-        city: "San Francisco",
-        state: "CA",
-        postalCode: "94105",
-        country: "US",
-        isDefault: true,
-      },
-    ],
-    createdAt: "2025-01-15T00:00:00Z",
-    updatedAt: "2025-01-15T00:00:00Z",
-    password: "password123",
-  },
-]
+// (2026-11-15 보안) 템플릿의 가짜 계정(admin@example.com / password123)을 지웠습니다.
+// 손님 로그인은 아직 없습니다 — 진짜 로그인을 붙일 때 이 파일을 바꿉니다.
+const CUSTOMER_SIGNUP_OPEN = false
+const DEMO_USERS: Array<User & { password: string }> = []
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -74,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       register: (data) => {
+        if (!CUSTOMER_SIGNUP_OPEN) return false
         const exists = DEMO_USERS.some((u) => u.email === data.email)
         if (exists) return false
 
