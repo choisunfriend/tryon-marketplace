@@ -148,7 +148,7 @@ export function SalonMap() {
     let map: MlMap | null = null
     let timer: ReturnType<typeof setTimeout> | undefined
     ;(async () => {
-      const maplibregl = (await import("maplibre-gl")).default
+      const maplibregl = await import("maplibre-gl")
       if (cancelled || !boxRef.current) return
       try {
         map = new maplibregl.Map({

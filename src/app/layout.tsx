@@ -6,24 +6,29 @@ import { getLocale, getMessages } from "next-intl/server"
 import { Toaster } from "sonner"
 import { siteConfig } from "@/lib/config"
 import "./globals.css"
+import { getL } from "@/i18n/server"
+import { ldJson } from "@/lib/json-ld"
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  metadataBase: new URL(siteConfig.url),
-  openGraph: {
-    type: "website",
-    siteName: siteConfig.name,
-    locale: siteConfig.locale.replace("-", "_"),
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const { L, lang } = await getL()
+  return {
+    title: {
+      default: `${siteConfig.name} — ${L(siteConfig.taglineKo, siteConfig.tagline)}`,
+      template: `%s | ${siteConfig.name}`,
+    },
+    description: siteConfig.description,
+    metadataBase: new URL(siteConfig.url),
+    openGraph: {
+      type: "website",
+      siteName: siteConfig.name,
+      locale: lang === "ko" ? "ko_KR" : siteConfig.locale.replace("-", "_"),
+    },
+  }
 }
 
 const organizationJsonLd = {
@@ -59,12 +64,12 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationJsonLd, websiteJsonLd]),
+            __html: ldJson([organizationJsonLd, websiteJsonLd]),
           }}
         />
-        {/* (2026-11-14) 브라우저 자동 번역 중에 React 화면이 멈추지 않게 */}
+        {/* (2026-11-14) 브라우저 자동 번역 중에 React 화면이 멈추지 않게 (번역은 이제 사이트가 직접 함) */}
         <TranslateGuard />
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>
         <Toaster position="bottom-right" />

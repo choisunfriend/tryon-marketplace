@@ -31,6 +31,7 @@ import type { Product, Brand, Category } from "@/types"
 import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
 import { useL } from "@/i18n/use-l"
 import { catName } from "@/i18n/catalog"
+import { ldJson } from "@/lib/json-ld"
 
 interface ProductDetailViewProps {
   product: Product
@@ -189,7 +190,7 @@ export function ProductDetailView({
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumbLd]) }}
+        dangerouslySetInnerHTML={{ __html: ldJson([jsonLd, breadcrumbLd]) }}
       />
       {/* Breadcrumb — shows category ancestry; product name is in the H1 below */}
       <Breadcrumb>
@@ -334,10 +335,8 @@ export function ProductDetailView({
       {product.body && (
         <section className="mt-16 border-t pt-12">
           <div className="mx-auto max-w-3xl">
-            <div
-              className="blog-body"
-              dangerouslySetInnerHTML={{ __html: product.body }}
-            />
+            {/* (2026-11-15 보안) 설명은 입점사가 쓰는 글 — HTML 로 넣지 않고 글자 그대로 보여 줌(줄바꿈 유지) */}
+            <div className="blog-body whitespace-pre-line">{product.body}</div>
           </div>
         </section>
       )}

@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/utils"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { siteConfig } from "@/lib/config"
 import { getL } from "@/i18n/server"
+import { ldJson } from "@/lib/json-ld"
 
 interface PostProps {
   params: Promise<{ slug: string }>
@@ -80,7 +81,7 @@ export default async function BlogPostPage({ params }: PostProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
+          __html: ldJson([
             articleJsonLd,
             breadcrumbJsonLd([
               { name: L("블로그", "Blog"), href: "/blog" },

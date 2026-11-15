@@ -13,6 +13,7 @@ import { Pagination } from "@/components/products/pagination"
 import type { Category, Product, PaginationMeta } from "@/types"
 import { useL } from "@/i18n/use-l"
 import { catDescription, catName } from "@/i18n/catalog"
+import { ldJson } from "@/lib/json-ld"
 
 interface CategoryViewProps {
   category: Category
@@ -53,7 +54,7 @@ export function CategoryView({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd(trail)),
+          __html: ldJson(breadcrumbJsonLd(trail)),
         }}
       />
       {/* Breadcrumb — full ancestor trail */}

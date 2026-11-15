@@ -14,6 +14,7 @@ import { pageRepository } from "@/lib/repositories"
 import { formatDate } from "@/lib/utils"
 import { siteConfig } from "@/lib/config"
 import { getL } from "@/i18n/server"
+import { ldJson } from "@/lib/json-ld"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -55,7 +56,7 @@ export default async function CmsPageDetail({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: ldJson(
             breadcrumbJsonLd([
               { name: L("페이지", "Pages"), href: "/pages" },
               { name: page.title, href: `/pages/${page.slug}` },

@@ -27,7 +27,7 @@ export function LocationPicker({
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const maplibregl = (await import("maplibre-gl")).default
+      const maplibregl = await import("maplibre-gl")
       if (cancelled || !boxRef.current) return
       const has = lat != null && lng != null
       // (2026-11-14) 위치를 아직 안 정했으면 서울 고정 대신 브라우저 지역에서 시작
