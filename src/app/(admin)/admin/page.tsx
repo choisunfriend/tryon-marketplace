@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Archive, Box, FileEdit, Package } from "lucide-react"
+import { useL } from "@/i18n/client"
 
 // (2026-11-01) 가짜 숫자($12,345 · 156건 등)를 빼고 D1 상품 숫자만 보여 줌.
 // 주문·고객은 아직 데모(브라우저 localStorage)라 여기 넣지 않음.
@@ -12,6 +13,7 @@ import { Archive, Box, FileEdit, Package } from "lucide-react"
 type Row = { id: string | number; name?: string; status?: string; updated_at?: string; created_at?: string; model_path?: string }
 
 export default function AdminDashboardPage() {
+  const { L } = useL()
   const [rows, setRows] = useState<Row[] | null>(null)
   const [error, setError] = useState("")
 
@@ -27,15 +29,15 @@ export default function AdminDashboardPage() {
 
   const n = (s?: string) => (rows ?? []).filter((p) => (p.status || "active") === s).length
   const stats = [
-    { name: "전체 상품", value: rows ? rows.length : "…", icon: Package },
-    { name: "판매 중 (active)", value: rows ? n("active") : "…", icon: Box },
-    { name: "임시 (draft)", value: rows ? n("draft") : "…", icon: FileEdit },
-    { name: "보관 (archived)", value: rows ? n("archived") : "…", icon: Archive },
+    { name: L("전체 상품", "All products"), value: rows ? rows.length : "…", icon: Package },
+    { name: L("판매 중 (active)", "On sale (active)"), value: rows ? n("active") : "…", icon: Box },
+    { name: L("임시 (draft)", "Draft"), value: rows ? n("draft") : "…", icon: FileEdit },
+    { name: L("보관 (archived)", "Archived"), value: rows ? n("archived") : "…", icon: Archive },
   ]
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="상품 현황" />
+      <PageHeader title={L("대시보드", "Dashboard")} description={L("상품 현황", "Product overview")} />
 
       {error && <p className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
@@ -55,24 +57,24 @@ export default function AdminDashboardPage() {
 
       <Card className="mt-8">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>최근 바뀐 상품</CardTitle>
+          <CardTitle>{L("최근 바뀐 상품", "Recently changed products")}</CardTitle>
           <a href="/admin/products" className="text-sm underline">
-            전체 보기
+            {L("전체 보기", "View all")}
           </a>
         </CardHeader>
         <CardContent>
           {!rows ? (
-            <p className="text-sm text-muted-foreground">불러오는 중…</p>
+            <p className="text-sm text-muted-foreground">{L("불러오는 중…", "Loading…")}</p>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              등록된 상품이 없습니다. <a href="/admin/products/new" className="underline">새 상품 등록</a>
+              {L("등록된 상품이 없습니다.", "No products yet.")} <a href="/admin/products/new" className="underline">{L("새 상품 등록", "Add a product")}</a>
             </p>
           ) : (
             <ul className="divide-y text-sm">
               {rows.slice(0, 8).map((p) => (
                 <li key={String(p.id)} className="flex items-center justify-between py-2">
                   <a href={`/admin/products/${encodeURIComponent(String(p.id))}`} className="hover:underline">
-                    {p.name || "(이름 없음)"}
+                    {p.name || L("(이름 없음)", "(no name)")}
                   </a>
                   <span className="text-xs text-muted-foreground">
                     {p.status || "active"} · {String(p.updated_at ?? p.created_at ?? "").slice(0, 10)}

@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // (2026-11-01) 관리자 상품 목록 — 검색·상태 거르기·수정·삭제·상태 바로 바꾸기
@@ -38,6 +39,9 @@ function money(p: Row): string {
 const STATUS = ["active", "draft", "archived"] as const
 
 export default function AdminProductsListPage() {
+  const { L } = useL()
+  const statusLabel = (s: string) =>
+    s === "all" ? L("전체", "All") : s === "active" ? L("판매 중", "Active") : s === "draft" ? L("임시", "Draft") : s === "archived" ? L("보관", "Archived") : s
   const [noImg] = useState(() => typeof window !== "undefined" && /[?&]noimg=1/.test(window.location.search))
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +79,7 @@ export default function AdminProductsListPage() {
   }, [rows, q, status])
 
   async function remove(p: Row) {
-    if (!window.confirm(`"${str(p.name)}" 상품을 삭제할까요?\n(이미지·3D 파일은 R2에 남아 [R2 동기화]에서 다시 등록할 수 있어요)`)) return
+    if (!window.confirm(L(`"${str(p.name)}" 상품을 삭제할까요?\n(이미지·3D 파일은 R2에 남아 [R2 동기화]에서 다시 등록할 수 있어요)`, `Delete "${str(p.name)}"?\n(Images and 3D files stay in R2 and can be re-added from [R2 sync])`))) return
     const id = String(p.id)
     setBusy(id)
     try {
@@ -84,7 +88,7 @@ export default function AdminProductsListPage() {
       if (!res.ok || data.success === false) throw new Error(data.error ?? `HTTP ${res.status}`)
       setRows((r) => r.filter((x) => String(x.id) !== id))
     } catch (e) {
-      window.alert(`삭제 실패: ${e instanceof Error ? e.message : String(e)}`)
+      window.alert(L(`삭제 실패: ${e instanceof Error ? e.message : String(e)}`, `Delete failed: ${e instanceof Error ? e.message : String(e)}`))
     } finally {
       setBusy("")
     }
@@ -103,7 +107,7 @@ export default function AdminProductsListPage() {
       if (!res.ok || data.success === false) throw new Error(data.error ?? `HTTP ${res.status}`)
       setRows((r) => r.map((x) => (String(x.id) === id ? { ...x, ...(data.product ?? { status: next }) } : x)))
     } catch (e) {
-      window.alert(`상태 변경 실패: ${e instanceof Error ? e.message : String(e)}`)
+      window.alert(L(`상태 변경 실패: ${e instanceof Error ? e.message : String(e)}`, `Status change failed: ${e instanceof Error ? e.message : String(e)}`))
     } finally {
       setBusy("")
     }
@@ -121,13 +125,13 @@ export default function AdminProductsListPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Products</h1>
+        <h1 className="text-2xl font-semibold">{L("상품", "Products")}</h1>
         <div className="flex gap-2">
           <button type="button" onClick={() => void load()} className="rounded border px-4 py-2 text-sm">
-            새로고침
+            {L("새로고침", "Refresh")}
           </button>
           <a href="/admin/products/new" className="rounded bg-black px-4 py-2 text-sm text-white">
-            + 새 상품
+            {L("+ 새 상품", "+ New product")}
           </a>
         </div>
       </div>
@@ -136,7 +140,7 @@ export default function AdminProductsListPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="이름·브랜드·상품코드·분류 검색"
+          placeholder={L("이름·브랜드·상품코드·분류 검색", "Search name, brand, product code, category")}
           className="w-full max-w-sm rounded border p-2 text-sm"
         />
         <div className="flex gap-1 text-sm">
@@ -147,7 +151,7 @@ export default function AdminProductsListPage() {
               onClick={() => setStatus(s)}
               className={`rounded px-3 py-1.5 ${status === s ? "bg-black text-white" : "border"}`}
             >
-              {s === "all" ? "전체" : s} ({counts[s] ?? 0})
+              {statusLabel(s)} ({counts[s] ?? 0})
             </button>
           ))}
         </div>
@@ -156,21 +160,21 @@ export default function AdminProductsListPage() {
       {error && <p className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">불러오는 중…</p>
+        <p className="text-sm text-muted-foreground">{L("불러오는 중…", "Loading…")}</p>
       ) : shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{rows.length ? "조건에 맞는 상품이 없습니다." : "등록된 상품이 없습니다."}</p>
+        <p className="text-sm text-muted-foreground">{rows.length ? L("조건에 맞는 상품이 없습니다.", "No products match.") : L("등록된 상품이 없습니다.", "No products yet.")}</p>
       ) : (
         <div className="overflow-x-auto rounded border">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left">
               <tr>
-                <th className="p-3">이미지</th>
-                <th className="p-3">이름</th>
-                <th className="p-3">분류</th>
-                <th className="p-3">가격</th>
-                <th className="p-3">상태</th>
+                <th className="p-3">{L("이미지", "Image")}</th>
+                <th className="p-3">{L("이름", "Name")}</th>
+                <th className="p-3">{L("분류", "Category")}</th>
+                <th className="p-3">{L("가격", "Price")}</th>
+                <th className="p-3">{L("상태", "Status")}</th>
                 <th className="p-3">3D</th>
-                <th className="p-3">수정일</th>
+                <th className="p-3">{L("수정일", "Updated")}</th>
                 <th className="p-3" />
               </tr>
             </thead>
@@ -191,7 +195,7 @@ export default function AdminProductsListPage() {
                     </td>
                     <td className="p-3">
                       <a href={`/admin/products/${encodeURIComponent(id)}`} className="font-medium hover:underline">
-                        {str(p.name) || "(이름 없음)"}
+                        {str(p.name) || L("(이름 없음)", "(no name)")}
                       </a>
                       <div className="text-xs text-muted-foreground">
                         {[str(p.brand), str(p.product_code)].filter(Boolean).join(" · ")}
@@ -208,16 +212,16 @@ export default function AdminProductsListPage() {
                       >
                         {STATUS.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {statusLabel(s)}
                           </option>
                         ))}
                       </select>
                     </td>
-                    <td className="p-3">{has3d ? "있음" : "-"}</td>
+                    <td className="p-3">{has3d ? L("있음", "Yes") : "-"}</td>
                     <td className="p-3 text-xs text-muted-foreground">{str(p.updated_at ?? p.created_at).slice(0, 10)}</td>
                     <td className="whitespace-nowrap p-3 text-right">
                       <a href={`/admin/products/${encodeURIComponent(id)}`} className="mr-2 rounded border px-3 py-1">
-                        수정
+                        {L("수정", "Edit")}
                       </a>
                       <button
                         type="button"
@@ -225,7 +229,7 @@ export default function AdminProductsListPage() {
                         onClick={() => void remove(p)}
                         className="rounded border border-red-300 px-3 py-1 text-red-700"
                       >
-                        삭제
+                        {L("삭제", "Delete")}
                       </button>
                     </td>
                   </tr>

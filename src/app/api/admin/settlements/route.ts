@@ -2,11 +2,13 @@ import { NextResponse } from "next/server"
 import { fail, noStore, requireAdmin } from "@/lib/admin-guard"
 import { balances, listPayouts, recentEntries } from "@/lib/ledger"
 import { activeProvider, intendedProvider } from "@/lib/payouts"
+import { withLang } from "@/i18n/api"
+import { bi } from "@/i18n/l"
 
 // (2026-11-01) 정산 현황 — GET
 //   platform: 모든 입점사 잔액·지급·장부 + 입점사별 정산 업체 상태
 //   입점사: 자기 것만 (+ 정산 업체 연결 안내)
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const g = await requireAdmin(request)
   if ("err" in g) return g.err
   const { session, db } = g
@@ -45,6 +47,8 @@ export async function GET(request: Request) {
       { headers: noStore }
     )
   } catch (e) {
-    return fail(e instanceof Error ? e.message : "정산 정보를 읽지 못했습니다 — migrations/0002 를 실행했는지 확인하세요", 500)
+    return fail(e instanceof Error ? e.message : bi("정산 정보를 읽지 못했습니다 — migrations/0002 를 실행했는지 확인하세요", "Couldn't load settlements — check that migrations/0002 was run"), 500)
   }
 }
+
+export const GET = withLang(handleGET)

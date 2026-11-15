@@ -29,6 +29,8 @@ import { formatPrice } from "@/lib/utils"
 import { breadcrumbJsonLd } from "@/lib/structured-data"
 import type { Product, Brand, Category } from "@/types"
 import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
+import { useL } from "@/i18n/use-l"
+import { catName } from "@/i18n/catalog"
 
 interface ProductDetailViewProps {
   product: Product
@@ -43,6 +45,7 @@ export function ProductDetailView({
   brand,
   categoryAncestors = [],
 }: ProductDetailViewProps) {
+  const { L } = useL()
   const [selectedVariantId, setSelectedVariantId] = useState(
     product.variants[0]?.id ?? ""
   )
@@ -94,8 +97,8 @@ export function ProductDetailView({
         },
       }
     )
-    if (sent) toast.success("Trying it on in GYEOL…")
-    else toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
+    if (sent) toast.success(L("GYEOL에서 입혀 보는 중…", "Trying it on in GYEOL…"))
+    else toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
   }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
 
@@ -140,7 +143,7 @@ export function ProductDetailView({
   function handleToggleWishlist() {
     if (isWishlisted) {
       removeFromWishlist(product.id)
-      toast("Removed from wishlist")
+      toast(L("찜 목록에서 뺐어요", "Removed from wishlist"))
     } else {
       addToWishlist({
         productId: product.id,
@@ -149,13 +152,13 @@ export function ProductDetailView({
         price: selectedVariant!.price,
         image: product.images[0] ?? { url: "", alt: product.name },
       })
-      toast.success("Added to wishlist")
+      toast.success(L("찜 목록에 담았어요", "Added to wishlist"))
     }
   }
 
   const breadcrumbLd = breadcrumbJsonLd([
-    { name: "Shop", href: "/shop" },
-    ...categoryAncestors.map((c) => ({ name: c.name, href: `/${c.slug}` })),
+    { name: L("쇼핑", "Shop"), href: "/shop" },
+    ...categoryAncestors.map((c) => ({ name: catName(L, c), href: `/${c.slug}` })),
     { name: product.name, href: `/${product.slug}` },
   ])
 
@@ -192,7 +195,7 @@ export function ProductDetailView({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/shop" />}>Shop</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href="/shop" />}>{L("쇼핑", "Shop")}</BreadcrumbLink>
           </BreadcrumbItem>
           {categoryAncestors.map((cat, idx) => {
             const isLast = idx === categoryAncestors.length - 1
@@ -201,10 +204,10 @@ export function ProductDetailView({
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage>{cat.name}</BreadcrumbPage>
+                    <BreadcrumbPage>{catName(L, cat)}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink render={<Link href={`/${cat.slug}`} />}>
-                      {cat.name}
+                      {catName(L, cat)}
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -287,7 +290,7 @@ export function ProductDetailView({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                aria-label={isWishlisted ? L("찜 해제", "Remove from wishlist") : L("찜하기", "Add to wishlist")}
                 onClick={handleToggleWishlist}
               >
                 <Heart className={`h-4 w-4 ${isWishlisted ? "fill-wishlist text-wishlist" : ""}`} />
@@ -300,7 +303,7 @@ export function ProductDetailView({
               onClick={handleAddToCart}
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
-              {inStock ? "Add to Cart" : "Out of Stock"}
+              {inStock ? L("장바구니 담기", "Add to Cart") : L("품절", "Out of Stock")}
             </Button>
             {canTryOn && (
               <Button
@@ -310,14 +313,14 @@ export function ProductDetailView({
                 onClick={handleTryOn}
               >
                 <Shirt className="mr-2 h-4 w-4" />
-                Try on
+                {L("입어 보기", "Try on")}
               </Button>
             )}
           </div>
 
           {!inStock && (
             <p className="mt-2 text-sm text-destructive">
-              This item is currently out of stock.
+              {L("지금은 품절된 상품이에요.", "This item is currently out of stock.")}
             </p>
           )}
 
@@ -343,7 +346,7 @@ export function ProductDetailView({
       {relatedProducts.length > 0 && (
         <section className="mt-16">
           <h2 className="text-xl font-bold tracking-tight">
-            You may also like
+            {L("함께 보면 좋은 상품", "You may also like")}
           </h2>
           <div className="mt-6">
             <ProductGrid products={relatedProducts} />

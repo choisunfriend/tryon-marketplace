@@ -7,6 +7,7 @@ import { blogRepository } from "@/lib/repositories"
 import { formatDate } from "@/lib/utils"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { siteConfig } from "@/lib/config"
+import { getL } from "@/i18n/server"
 
 interface BlogIndexProps {
   searchParams: Promise<{ page?: string }>
@@ -19,15 +20,19 @@ export async function generateMetadata({
   const page = Number(params.page) || 1
   const canonical =
     page > 1 ? `${siteConfig.url}/blog?page=${page}` : `${siteConfig.url}/blog`
+  const { L } = await getL()
   return {
-    title: "Blog",
-    description:
-      "Guides, stories, and notes from the team — sustainability, product care, and behind the scenes.",
+    title: L("블로그", "Blog"),
+    description: L(
+      "팀이 전하는 가이드, 이야기, 소식 — 지속 가능성, 상품 관리, 뒷이야기.",
+      "Guides, stories, and notes from the team — sustainability, product care, and behind the scenes."
+    ),
     alternates: { canonical },
   }
 }
 
 export default async function BlogIndex({ searchParams }: BlogIndexProps) {
+  const { L, lang } = await getL()
   const params = await searchParams
   const page = Number(params.page) || 1
 
@@ -39,8 +44,8 @@ export default async function BlogIndex({ searchParams }: BlogIndexProps) {
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
       <PageHeader
-        title="Blog"
-        description={`${pagination.total} ${pagination.total === 1 ? "post" : "posts"}`}
+        title={L("블로그", "Blog")}
+        description={L(`글 ${pagination.total}개`, `${pagination.total} ${pagination.total === 1 ? "post" : "posts"}`)}
       />
 
       <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
@@ -59,7 +64,7 @@ export default async function BlogIndex({ searchParams }: BlogIndexProps) {
             <div className="mt-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <time dateTime={post.publishedAt}>
-                  {formatDate(post.publishedAt)}
+                  {formatDate(post.publishedAt, lang)}
                 </time>
                 <span>·</span>
                 <span>{post.author}</span>

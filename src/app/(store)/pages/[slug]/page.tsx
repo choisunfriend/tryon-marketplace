@@ -13,6 +13,7 @@ import { breadcrumbJsonLd } from "@/lib/structured-data"
 import { pageRepository } from "@/lib/repositories"
 import { formatDate } from "@/lib/utils"
 import { siteConfig } from "@/lib/config"
+import { getL } from "@/i18n/server"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -44,6 +45,7 @@ export async function generateMetadata({
 }
 
 export default async function CmsPageDetail({ params }: PageProps) {
+  const { L, lang } = await getL()
   const { slug } = await params
   const page = await pageRepository.getBySlug(slug)
   if (!page) notFound()
@@ -55,7 +57,7 @@ export default async function CmsPageDetail({ params }: PageProps) {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             breadcrumbJsonLd([
-              { name: "Pages", href: "/pages" },
+              { name: L("페이지", "Pages"), href: "/pages" },
               { name: page.title, href: `/pages/${page.slug}` },
             ])
           ),
@@ -65,7 +67,7 @@ export default async function CmsPageDetail({ params }: PageProps) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/pages" />}>Pages</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href="/pages" />}>{L("페이지", "Pages")}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -78,7 +80,7 @@ export default async function CmsPageDetail({ params }: PageProps) {
         <header>
           <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Updated {formatDate(page.updatedAt ?? page.publishedAt)}
+            {L("수정", "Updated")} {formatDate(page.updatedAt ?? page.publishedAt, lang)}
           </p>
         </header>
 

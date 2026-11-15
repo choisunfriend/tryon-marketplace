@@ -7,6 +7,8 @@ import { Pagination } from "@/components/products/pagination"
 import { SortDropdown } from "@/components/products/sort-dropdown"
 import type { SortOption } from "@/types"
 import { siteConfig } from "@/lib/config"
+import { getL } from "@/i18n/server"
+import { catName } from "@/i18n/catalog"
 
 interface ShopPageProps {
   searchParams: Promise<{
@@ -24,9 +26,10 @@ export async function generateMetadata({
   const page = Number(params.page) || 1
   const canonical = page > 1 ? `${siteConfig.url}/shop?page=${page}` : `${siteConfig.url}/shop`
 
+  const { L } = await getL()
   return {
-    title: "Shop",
-    description: "Browse our full collection of quality products.",
+    title: L("쇼핑", "Shop"),
+    description: L("좋은 상품을 모두 둘러보세요.", "Browse our full collection of quality products."),
     alternates: { canonical },
   }
 }
@@ -39,6 +42,7 @@ const SORT_OPTIONS: Record<string, SortOption> = {
 }
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
+  const { L } = await getL()
   const params = await searchParams
   const page = Number(params.page) || 1
   const sortKey = params.sort || "newest"
@@ -72,14 +76,16 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             {categorySlug
-              ? categories.find((c) => c.slug === categorySlug)?.name ??
-                "Shop"
+              ? (() => {
+                  const c = categories.find((x) => x.slug === categorySlug)
+                  return c ? catName(L, c) : L("쇼핑", "Shop")
+                })()
               : searchQuery
-                ? `Results for "${searchQuery}"`
-                : "All Products"}
+                ? L(`"${searchQuery}" 검색 결과`, `Results for "${searchQuery}"`)
+                : L("전체 상품", "All Products")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {pagination.total} {pagination.total === 1 ? "product" : "products"}
+            {L(`상품 ${pagination.total}개`, `${pagination.total} ${pagination.total === 1 ? "product" : "products"}`)}
           </p>
         </div>
 
@@ -98,7 +104,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               : "border-border hover:border-foreground"
           }`}
         >
-          Shop All
+          {L("전체", "Shop All")}
         </Link>
         {categories.map((cat) => {
           return (
@@ -111,7 +117,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                   : "border-border hover:border-foreground"
               }`}
             >
-              {cat.name}
+              {catName(L, cat)}
             </Link>
           )
         })}

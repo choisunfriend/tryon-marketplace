@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { useCallback, useEffect, useState } from "react"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // R2 동기화 — R2에는 파일이 있는데 DB(상품 목록)에는 없는 폴더를 찾아 등록
@@ -59,6 +60,7 @@ function pickModel(models: string[]): string {
 }
 
 export default function AdminSyncPage() {
+  const { L } = useL()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [missing, setMissing] = useState<Folder[]>([])
@@ -75,8 +77,8 @@ export default function AdminSyncPage() {
       ])
       const r2 = await r2Res.json()
       const db = await dbRes.json()
-      if (!r2.success) throw new Error(`R2 목록 실패: ${r2.error ?? r2Res.status}`)
-      if (!db.success) throw new Error(`상품 목록 실패: ${db.error ?? dbRes.status}`)
+      if (!r2.success) throw new Error(L(`R2 목록 실패: ${r2.error ?? r2Res.status}`, `R2 list failed: ${r2.error ?? r2Res.status}`))
+      if (!db.success) throw new Error(L(`상품 목록 실패: ${db.error ?? dbRes.status}`, `Product list failed: ${db.error ?? dbRes.status}`))
 
       // DB 상품이 쓰는 R2 폴더 = model_file / model_path / 이미지 주소에 들어 있는 products/{folder}/
       const used = new Set<string>()
@@ -124,7 +126,7 @@ export default function AdminSyncPage() {
     const d = drafts[folder]
     if (!d) return false
     if (!d.name.trim()) {
-      update(folder, { state: "error", message: "이름을 입력하세요" })
+      update(folder, { state: "error", message: L("이름을 입력하세요", "Enter a name") })
       return false
     }
     update(folder, { state: "saving", message: "" })
@@ -165,12 +167,12 @@ export default function AdminSyncPage() {
       if (!res.ok || data.success === false) {
         throw new Error(data.error ?? `HTTP ${res.status}`)
       }
-      update(folder, { state: "done", message: "등록됨" })
+      update(folder, { state: "done", message: L("등록됨", "Added") })
       return true
     } catch (e) {
       update(folder, {
         state: "error",
-        message: `저장 실패: ${e instanceof Error ? e.message : String(e)}`,
+        message: L(`저장 실패: ${e instanceof Error ? e.message : String(e)}`, `Save failed: ${e instanceof Error ? e.message : String(e)}`),
       })
       return false
     }
@@ -186,10 +188,12 @@ export default function AdminSyncPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="mb-2 text-2xl font-semibold">R2 동기화</h1>
+      <h1 className="mb-2 text-2xl font-semibold">{L("R2 동기화", "R2 sync")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        R2에 파일은 올라갔는데 상품 목록(DB)에 없는 폴더입니다. 정보를 확인하고
-        등록하면 쇼핑몰과 GYEOL 앱에 바로 나옵니다.
+        {L(
+          "R2에 파일은 올라갔는데 상품 목록(DB)에 없는 폴더입니다. 정보를 확인하고 등록하면 쇼핑몰과 GYEOL 앱에 바로 나옵니다.",
+          "Folders that are in R2 but not in the product list (DB). Check the details and add them — they show up in the shop and the GYEOL app right away."
+        )}
       </p>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -199,7 +203,7 @@ export default function AdminSyncPage() {
           className="rounded-md border px-3 py-1.5 text-sm"
           disabled={loading}
         >
-          {loading ? "불러오는 중…" : "새로고침"}
+          {loading ? L("불러오는 중…", "Loading…") : L("새로고침", "Refresh")}
         </button>
         {missing.length > 0 && (
           <button
@@ -207,12 +211,12 @@ export default function AdminSyncPage() {
             onClick={registerAll}
             className="rounded-md bg-black px-3 py-1.5 text-sm text-white"
           >
-            전부 등록 ({missing.length})
+            {L(`전부 등록 (${missing.length})`, `Add all (${missing.length})`)}
           </button>
         )}
         {!loading && !error && (
           <span className="text-sm text-muted-foreground">
-            이미 등록된 폴더 {registered}개 · 등록 안 된 폴더 {missing.length}개
+            {L(`이미 등록된 폴더 ${registered}개 · 등록 안 된 폴더 ${missing.length}개`, `Added folders: ${registered} · Not added: ${missing.length}`)}
           </span>
         )}
       </div>
@@ -225,7 +229,7 @@ export default function AdminSyncPage() {
 
       {!loading && !error && missing.length === 0 && (
         <div className="rounded-md border p-6 text-center text-sm text-muted-foreground">
-          R2의 모든 상품 폴더가 이미 등록돼 있습니다.
+          {L("R2의 모든 상품 폴더가 이미 등록돼 있습니다.", "Every product folder in R2 is already added.")}
         </div>
       )}
 
@@ -242,14 +246,14 @@ export default function AdminSyncPage() {
                   <img src={d.image} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    이미지 없음
+                    {L("이미지 없음", "No image")}
                   </div>
                 )}
               </div>
 
               <div className="grid flex-1 grid-cols-2 gap-2 md:grid-cols-4">
                 <div className="col-span-2">
-                  <label className="text-xs text-muted-foreground">이름</label>
+                  <label className="text-xs text-muted-foreground">{L("이름", "Name")}</label>
                   <input
                     className={input}
                     value={d.name}
@@ -257,31 +261,31 @@ export default function AdminSyncPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">성별</label>
+                  <label className="text-xs text-muted-foreground">{L("성별", "Gender")}</label>
                   <select
                     className={input}
                     value={d.gender}
                     onChange={(e) => update(f.folder, { gender: e.target.value as Draft["gender"] })}
                   >
-                    <option value="male">남자</option>
-                    <option value="female">여자</option>
-                    <option value="unisex">공용</option>
+                    <option value="male">{L("남자", "Man")}</option>
+                    <option value="female">{L("여자", "Woman")}</option>
+                    <option value="unisex">{L("공용", "Unisex")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">착용 부위</label>
+                  <label className="text-xs text-muted-foreground">{L("착용 부위", "Body part")}</label>
                   <select
                     className={input}
                     value={d.body_part}
                     onChange={(e) => update(f.folder, { body_part: e.target.value as Draft["body_part"] })}
                   >
-                    <option value="upper_body">상의</option>
-                    <option value="lower_body">하의</option>
-                    <option value="outer">아우터</option>
+                    <option value="upper_body">{L("상의", "Top")}</option>
+                    <option value="lower_body">{L("하의", "Bottoms")}</option>
+                    <option value="outer">{L("아우터", "Outerwear")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">종류</label>
+                  <label className="text-xs text-muted-foreground">{L("종류", "Type")}</label>
                   <select
                     className={input}
                     value={d.subcategory}
@@ -293,7 +297,7 @@ export default function AdminSyncPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">가격</label>
+                  <label className="text-xs text-muted-foreground">{L("가격", "Price")}</label>
                   <input
                     className={input}
                     type="number"
@@ -302,27 +306,27 @@ export default function AdminSyncPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs text-muted-foreground">3D 파일</label>
+                  <label className="text-xs text-muted-foreground">{L("3D 파일", "3D file")}</label>
                   <select
                     className={input}
                     value={d.model}
                     onChange={(e) => update(f.folder, { model: e.target.value })}
                   >
-                    <option value="">(없음)</option>
+                    <option value="">{L("(없음)", "(none)")}</option>
                     {f.models.map((m) => (
                       <option key={m} value={m}>{m.split("/").pop()}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col-span-2 text-xs text-muted-foreground md:col-span-4">
-                  폴더 {f.folder} · 이미지 {f.images.length}장 · 3D {f.models.length}개
+                  {L(`폴더 ${f.folder} · 이미지 ${f.images.length}장 · 3D ${f.models.length}개`, `Folder ${f.folder} · ${f.images.length} images · ${f.models.length} 3D files`)}
                   {d.model && noObj && (
                     <span className="ml-2 text-amber-600">
-                      OBJ가 아니라 쇼핑몰에만 나오고 앱에서는 입혀지지 않습니다
+                      {L("OBJ가 아니라 쇼핑몰에만 나오고 앱에서는 입혀지지 않습니다", "Not an OBJ — it shows in the shop but can't be worn in the app")}
                     </span>
                   )}
                   {!d.model && (
-                    <span className="ml-2 text-amber-600">3D 파일이 없어 앱에서는 입혀지지 않습니다</span>
+                    <span className="ml-2 text-amber-600">{L("3D 파일이 없어 앱에서는 입혀지지 않습니다", "No 3D file — it can't be worn in the app")}</span>
                   )}
                 </div>
               </div>
@@ -334,11 +338,11 @@ export default function AdminSyncPage() {
                   disabled={d.state === "saving" || d.state === "done"}
                   className="rounded-md bg-black px-3 py-1.5 text-sm text-white disabled:opacity-40"
                 >
-                  {d.state === "saving" ? "저장 중…" : d.state === "done" ? "등록됨" : "등록"}
+                  {d.state === "saving" ? L("저장 중…", "Saving…") : d.state === "done" ? L("등록됨", "Added") : L("등록", "Add")}
                 </button>
                 {d.state === "done" && d.model && /\.obj$/i.test(d.model) && (
                   <a href="/admin/bake" className="text-xs underline">
-                    3D 굽기 →
+                    {L("3D 굽기 →", "3D bake →")}
                   </a>
                 )}
                 {d.message && (

@@ -10,6 +10,7 @@ import {
 import { ProductGrid } from "@/components/products/product-grid"
 import { Pagination } from "@/components/products/pagination"
 import type { Brand, Product, PaginationMeta } from "@/types"
+import { useL } from "@/i18n/use-l"
 
 interface BrandViewProps {
   brand: Brand
@@ -18,12 +19,13 @@ interface BrandViewProps {
 }
 
 export function BrandView({ brand, products, pagination }: BrandViewProps) {
+  const { L } = useL()
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/brands" />}>Brands</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href="/brands" />}>{L("브랜드", "Brands")}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -38,7 +40,7 @@ export function BrandView({ brand, products, pagination }: BrandViewProps) {
           {brand.description}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {pagination.total} {pagination.total === 1 ? "product" : "products"}
+          {L(`상품 ${pagination.total}개`, `${pagination.total} ${pagination.total === 1 ? "product" : "products"}`)}
         </p>
       </div>
 

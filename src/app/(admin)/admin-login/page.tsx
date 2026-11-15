@@ -3,12 +3,15 @@
 
 import { FormEvent, Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { TranslateGuard } from "@/components/translate-guard"  // (2026-11-14) lang="ko" — 브라우저 번역 제안
+import { TranslateGuard } from "@/components/translate-guard"
+import { LangSwitch } from "@/components/i18n/lang-switch"
+import { useL } from "@/i18n/client"
 
 // 관리자 로그인 — 비밀번호는 서버(/api/admin/login)에서만 확인합니다.
 // (2026-11-01) 입점사 계정은 이메일+비밀번호. 이메일을 비우면 플랫폼 비상 비밀번호(ADMIN_PASSWORD)로 확인.
 
 function LoginForm() {
+  const { L } = useL()
   const params = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -34,7 +37,7 @@ function LoginForm() {
       // (2026-11-01) #뒤(앱의 「미용실에 올리기」가 넘긴 스타일)는 로그인 뒤에도 이어 붙임
       window.location.href = next + (/^\/admin\/salons\/upload$/.test(next) ? window.location.hash : "")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인 실패")
+      setError(err instanceof Error ? err.message : L("로그인 실패", "Sign-in failed"))
       setPassword("")
     } finally {
       setBusy(false)
@@ -43,14 +46,17 @@ function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-lg border bg-white p-6 shadow-sm">
-      <TranslateGuard lang="ko" />
-      <h1 className="text-xl font-semibold">관리자 로그인</h1>
+      <TranslateGuard />
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">{L("관리자 로그인", "Admin sign-in")}</h1>
+        <LangSwitch />
+      </div>
       <input
         type="email"
         autoComplete="username"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="이메일 (입점사 계정)"
+        placeholder={L("이메일 (입점사 계정)", "Email (store account)")}
         className="w-full rounded-md border px-3 py-2 text-sm"
       />
       <input
@@ -59,20 +65,20 @@ function LoginForm() {
         required
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="비밀번호"
+        placeholder={L("비밀번호", "Password")}
         className="w-full rounded-md border px-3 py-2 text-sm"
       />
-      <p className="text-xs text-muted-foreground">플랫폼 운영자 비상 로그인은 이메일을 비우고 비밀번호만 넣으세요.</p>
+      <p className="text-xs text-muted-foreground">{L("플랫폼 운영자 비상 로그인은 이메일을 비우고 비밀번호만 넣으세요.", "For platform operator emergency sign-in, leave the email empty and enter only the password.")}</p>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
         disabled={busy || !password}
         className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {busy ? "확인 중…" : "로그인"}
+        {busy ? L("확인 중…", "Checking…") : L("로그인", "Sign in")}
       </button>
       <p className="text-center text-sm">
-        <a href="/seller/apply" className="underline">입점 신청하기 · Apply as a seller</a>
+        <a href="/seller/apply" className="underline">{L("입점 신청하기", "Apply as a seller")}</a>
       </p>
     </form>
   )

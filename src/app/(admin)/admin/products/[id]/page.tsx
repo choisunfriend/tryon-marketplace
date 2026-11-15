@@ -4,9 +4,11 @@
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import ProductForm, { type AdminProduct } from "@/components/admin/product-form"
+import { useL } from "@/i18n/client"
 
 // (2026-11-01) 상품 수정 — GET /api/admin/products/{id} 로 읽어 폼에 채우고 PUT 으로 저장
 export default function AdminEditProductPage() {
+  const { L } = useL()
   const params = useParams<{ id: string }>()
   const id = String(params?.id ?? "")
   const [product, setProduct] = useState<AdminProduct | null>(null)
@@ -32,10 +34,10 @@ export default function AdminEditProductPage() {
       <div className="mx-auto max-w-4xl p-6">
         <p className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>
         <a href="/admin/products" className="text-sm underline">
-          목록으로
+          {L("목록으로", "Back to list")}
         </a>
       </div>
     )
-  if (!product) return <p className="p-6 text-sm text-muted-foreground">불러오는 중…</p>
+  if (!product) return <p className="p-6 text-sm text-muted-foreground">{L("불러오는 중…", "Loading…")}</p>
   return <ProductForm key={String(product.id)} product={product} />
 }

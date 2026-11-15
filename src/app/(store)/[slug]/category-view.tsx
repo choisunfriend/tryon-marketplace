@@ -11,6 +11,8 @@ import {
 import { ProductGrid } from "@/components/products/product-grid"
 import { Pagination } from "@/components/products/pagination"
 import type { Category, Product, PaginationMeta } from "@/types"
+import { useL } from "@/i18n/use-l"
+import { catDescription, catName } from "@/i18n/catalog"
 
 interface CategoryViewProps {
   category: Category
@@ -39,10 +41,11 @@ export function CategoryView({
   subcategories = [],
   ancestors = [],
 }: CategoryViewProps) {
+  const { L } = useL()
   // Full ancestor trail for breadcrumbs — e.g. Shop > Electronics > Headphones
   const trail = [
-    { name: "Shop", href: "/shop" },
-    ...ancestors.map((c) => ({ name: c.name, href: `/${c.slug}` })),
+    { name: L("쇼핑", "Shop"), href: "/shop" },
+    ...ancestors.map((c) => ({ name: catName(L, c), href: `/${c.slug}` })),
   ]
 
   return (
@@ -57,7 +60,7 @@ export function CategoryView({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/shop" />}>Shop</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href="/shop" />}>{L("쇼핑", "Shop")}</BreadcrumbLink>
           </BreadcrumbItem>
           {ancestors.map((cat, idx) => {
             const isLast = idx === ancestors.length - 1
@@ -66,10 +69,10 @@ export function CategoryView({
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage>{cat.name}</BreadcrumbPage>
+                    <BreadcrumbPage>{catName(L, cat)}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink render={<Link href={`/${cat.slug}`} />}>
-                      {cat.name}
+                      {catName(L, cat)}
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -81,13 +84,12 @@ export function CategoryView({
 
       {/* Header */}
       <div className="mt-2">
-        <h1 className="text-3xl font-bold tracking-tight">{category.name}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{catName(L, category)}</h1>
         {category.description && (
-          <p className="mt-2 text-muted-foreground">{category.description}</p>
+          <p className="mt-2 text-muted-foreground">{catDescription(L, category)}</p>
         )}
         <p className="mt-1 text-sm text-muted-foreground">
-          {pagination.total}{" "}
-          {pagination.total === 1 ? "product" : "products"}
+          {L(`상품 ${pagination.total}개`, `${pagination.total} ${pagination.total === 1 ? "product" : "products"}`)}
         </p>
       </div>
 
@@ -100,7 +102,7 @@ export function CategoryView({
               href={`/${sub.slug}`}
               className="rounded-full border border-border px-3 py-1 text-xs font-medium transition-colors hover:border-foreground"
             >
-              {stripParentPrefix(sub.name, category.name)}
+              {L(catName(L, sub), stripParentPrefix(sub.name, category.name))}
             </Link>
           ))}
         </div>

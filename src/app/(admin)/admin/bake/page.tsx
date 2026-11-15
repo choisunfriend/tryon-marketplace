@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { BakePanel, assetUrl, type BakeManifest as Manifest } from "@/components/admin/bake-panel"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // 3D 굽기 — 상품 OBJ를 GYEOL 표준 몸에 맞춰 구워 R2에 저장
@@ -63,6 +64,7 @@ function toItem(p0: ApiProduct): Item | null {
 }
 
 export default function AdminBakePage() {
+  const { L } = useL()
   const [items, setItems] = useState<Item[]>([])
   const [manifests, setManifests] = useState<Record<string, Manifest | null>>({})
   const [listError, setListError] = useState("")
@@ -103,20 +105,21 @@ export default function AdminBakePage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="mb-2 text-2xl font-semibold">3D 굽기</h1>
+      <h1 className="mb-2 text-2xl font-semibold">{L("3D 굽기", "3D bake")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        상품의 3D 옷을 GYEOL 표준 몸에 맞춰 미리 구워 둡니다. 구운 옷은 앱에서 바로 입혀지고,
-        굽지 않은 옷은 앱이 매번 자동으로 맞춥니다(정확도가 떨어질 수 있음). 저장할 때 옷을 몸에 묶은
-        기록도 함께 남겨서, 나중에 손님 체형에 맞춰 옷이 따라가게 합니다.
+        {L(
+          "상품의 3D 옷을 GYEOL 표준 몸에 맞춰 미리 구워 둡니다. 구운 옷은 앱에서 바로 입혀지고, 굽지 않은 옷은 앱이 매번 자동으로 맞춥니다(정확도가 떨어질 수 있음). 저장할 때 옷을 몸에 묶은 기록도 함께 남겨서, 나중에 손님 체형에 맞춰 옷이 따라가게 합니다.",
+          "Pre-bakes each product's 3D garment onto the GYEOL standard body. Baked garments go on right away in the app; unbaked ones are fitted automatically every time (less accurate). Saving also records how the garment is bound to the body, so it can follow each customer's body shape later."
+        )}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* 상품 목록 */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">상품</span>
+            <span className="text-sm font-medium">{L("상품", "Products")}</span>
             <button type="button" onClick={loadList} className="text-xs underline">
-              새로고침
+              {L("새로고침", "Refresh")}
             </button>
           </div>
           {listError && <p className="text-sm text-red-600">{listError}</p>}
@@ -149,7 +152,7 @@ export default function AdminBakePage() {
                     done ? "bg-green-100 text-green-800" : "bg-neutral-100 text-neutral-500"
                   }`}
                 >
-                  {done ? `구움 ${[m!.male && "남", m!.female && "여"].filter(Boolean).join("·")}` : "안 구움"}
+                  {done ? `${L("구움", "Baked")} ${[m!.male && L("남", "M"), m!.female && L("여", "F")].filter(Boolean).join("·")}` : L("안 구움", "Not baked")}
                 </span>
               </button>
             )
@@ -160,7 +163,7 @@ export default function AdminBakePage() {
         <div>
           {!sel ? (
             <div className="rounded-lg border p-10 text-center text-sm text-muted-foreground">
-              왼쪽에서 상품을 고르세요.
+              {L("왼쪽에서 상품을 고르세요.", "Choose a product on the left.")}
             </div>
           ) : (
             <BakePanel

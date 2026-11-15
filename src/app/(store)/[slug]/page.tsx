@@ -7,6 +7,8 @@ import { BrandView } from "./brand-view"
 import { formatPrice } from "@/lib/utils"
 import { siteConfig } from "@/lib/config"
 import data from "@/data/products.json"
+import { getL } from "@/i18n/server"
+import { catDescription, catName } from "@/i18n/catalog"
 
 interface SlugPageProps {
   params: Promise<{ slug: string }>
@@ -61,13 +63,14 @@ export async function generateMetadata({
 
   const category = await categoryRepository.getBySlug(slug)
   if (category) {
+    const { L } = await getL()
     return {
-      title: category.name,
-      description: category.description,
+      title: catName(L, category),
+      description: catDescription(L, category),
       alternates: { canonical: `/${category.slug}` },
       openGraph: {
-        title: category.name,
-        description: category.description,
+        title: catName(L, category),
+        description: catDescription(L, category),
         type: "website",
         url: `${siteConfig.url}/${category.slug}`,
       },

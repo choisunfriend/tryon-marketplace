@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { noStore, requireAdmin } from "@/lib/admin-guard"
 import { getStore } from "@/lib/stores-db"
+import { withLang } from "@/i18n/api"
 
 // (2026-11-01) 지금 로그인한 관리자 — 화면이 메뉴·입점사 이름·R2 폴더 앞머리를 정할 때 씀
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const g = await requireAdmin(request)
   if ("err" in g) return g.err
   const { session, db } = g
@@ -19,3 +20,5 @@ export async function GET(request: Request) {
     { headers: noStore }
   )
 }
+
+export const GET = withLang(handleGET)

@@ -9,8 +9,10 @@ import { OrderStatusBadge } from "@/components/ui/order-status-badge"
 import { useAuthGuard } from "@/hooks/use-auth-guard"
 import { useOrdersStore } from "@/store/orders"
 import { formatPrice, formatDate } from "@/lib/utils"
+import { useL } from "@/i18n/use-l"
 
 export default function OrdersPage() {
+  const { L, lang } = useL()
   const { user, isReady } = useAuthGuard()
   const orders = useOrdersStore((s) => s.orders)
 
@@ -23,16 +25,20 @@ export default function OrdersPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
       <PageHeader
-        title="Order History"
-        description={userOrders.length > 0 ? `${userOrders.length} ${userOrders.length === 1 ? "order" : "orders"}` : undefined}
+        title={L("주문 내역", "Order History")}
+        description={
+          userOrders.length > 0
+            ? L(`주문 ${userOrders.length}건`, `${userOrders.length} ${userOrders.length === 1 ? "order" : "orders"}`)
+            : undefined
+        }
       />
 
       {userOrders.length === 0 ? (
         <EmptyState
           icon={Package}
-          title="No orders yet"
-          description="When you place an order, it will appear here."
-          actionLabel="Start Shopping"
+          title={L("아직 주문이 없어요", "No orders yet")}
+          description={L("주문하시면 여기에 나타나요.", "When you place an order, it will appear here.")}
+          actionLabel={L("쇼핑 시작하기", "Start Shopping")}
           actionHref="/shop"
         />
       ) : (
@@ -43,7 +49,7 @@ export default function OrdersPage() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium">{order.orderNumber}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(order.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(order.createdAt, lang)}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <OrderStatusBadge status={order.status} />

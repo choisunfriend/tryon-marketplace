@@ -16,6 +16,7 @@ import { blogRepository } from "@/lib/repositories"
 import { formatDate } from "@/lib/utils"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { siteConfig } from "@/lib/config"
+import { getL } from "@/i18n/server"
 
 interface PostProps {
   params: Promise<{ slug: string }>
@@ -53,6 +54,7 @@ export async function generateMetadata({
 }
 
 export default async function BlogPostPage({ params }: PostProps) {
+  const { L, lang } = await getL()
   const { slug } = await params
   const post = await blogRepository.getBySlug(slug)
   if (!post) notFound()
@@ -81,7 +83,7 @@ export default async function BlogPostPage({ params }: PostProps) {
           __html: JSON.stringify([
             articleJsonLd,
             breadcrumbJsonLd([
-              { name: "Blog", href: "/blog" },
+              { name: L("블로그", "Blog"), href: "/blog" },
               { name: post.title, href: `/blog/${post.slug}` },
             ]),
           ]),
@@ -91,7 +93,7 @@ export default async function BlogPostPage({ params }: PostProps) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/blog" />}>Blog</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href="/blog" />}>{L("블로그", "Blog")}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -104,7 +106,7 @@ export default async function BlogPostPage({ params }: PostProps) {
         <header>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <time dateTime={post.publishedAt}>
-              {formatDate(post.publishedAt)}
+              {formatDate(post.publishedAt, lang)}
             </time>
             <span>·</span>
             <span>{post.author}</span>
@@ -135,7 +137,7 @@ export default async function BlogPostPage({ params }: PostProps) {
         {post.tags.length > 0 && (
           <footer className="mt-12 border-t pt-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">Tags:</span>
+              <span className="text-sm font-medium">{L("태그:", "Tags:")}</span>
               {post.tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}

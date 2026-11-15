@@ -3,6 +3,7 @@
 
 import { FormEvent, useEffect, useState } from "react"
 import { PageHeader } from "@/components/ui/page-header"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // (2026-11-01) GYEOL 앱 「미용실에 올리기」 받는 화면
@@ -56,6 +57,7 @@ async function uploadThumb(dataUrl: string, folderPrefix: string): Promise<strin
 }
 
 export default function SalonStyleUploadPage() {
+  const { L } = useL()
   const [payload, setPayload] = useState<Payload | null | undefined>(undefined)
   const [salons, setSalons] = useState<Salon[]>([])
   const [folderPrefix, setFolderPrefix] = useState("p-")
@@ -78,7 +80,7 @@ export default function SalonStyleUploadPage() {
         setSalons(x.salons)
         if (x.salons.length === 1) setForm((f) => ({ ...f, salonId: x.salons[0].id }))
       })
-      .catch((e) => setErr(e instanceof Error ? e.message : "미용실 목록을 읽지 못했어요"))
+      .catch((e) => setErr(e instanceof Error ? e.message : L("미용실 목록을 읽지 못했어요", "Couldn't load salons")))
     fetch("/api/admin/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((x) => x.success && setFolderPrefix(x.folderPrefix))
@@ -109,7 +111,7 @@ export default function SalonStyleUploadPage() {
       })
       const d = await r.json().catch(() => ({}))
       if (!r.ok || !d.success) throw new Error(d.error || `HTTP ${r.status}`)
-      setDone(salons.find((s) => s.id === form.salonId)?.name ?? "미용실")
+      setDone(salons.find((s) => s.id === form.salonId)?.name ?? L("미용실", "the salon"))
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -117,14 +119,17 @@ export default function SalonStyleUploadPage() {
     }
   }
 
-  if (payload === undefined) return <p className="text-sm text-muted-foreground">불러오는 중…</p>
+  if (payload === undefined) return <p className="text-sm text-muted-foreground">{L("불러오는 중…", "Loading…")}</p>
 
   if (!payload) {
     return (
       <div className="max-w-xl space-y-3">
-        <PageHeader title="스타일 올리기" description="GYEOL 앱에서 머리를 만든 뒤 「미용실에 올리기」를 누르면 이 화면이 열립니다." />
-        <p className="text-sm text-muted-foreground">받은 스타일이 없어요. 앱에서 다시 눌러 주세요.</p>
-        <a href="/admin/salons" className="text-sm underline">미용실 관리로</a>
+        <PageHeader
+          title={L("스타일 올리기", "Post a style")}
+          description={L("GYEOL 앱에서 머리를 만든 뒤 「미용실에 올리기」를 누르면 이 화면이 열립니다.", "This page opens when you tap “Post to salon” after creating a hairstyle in the GYEOL app.")}
+        />
+        <p className="text-sm text-muted-foreground">{L("받은 스타일이 없어요. 앱에서 다시 눌러 주세요.", "No style was received. Tap it again in the app.")}</p>
+        <a href="/admin/salons" className="text-sm underline">{L("미용실 관리로", "Go to salons")}</a>
       </div>
     )
   }
@@ -132,10 +137,13 @@ export default function SalonStyleUploadPage() {
   if (done) {
     return (
       <div className="max-w-xl space-y-3">
-        <PageHeader title="올렸어요" description={`「${form.name}」이(가) ${done}의 헤어스타일로 지도에 올라갔어요.`} />
+        <PageHeader
+          title={L("올렸어요", "Posted")}
+          description={L(`「${form.name}」이(가) ${done}의 헤어스타일로 지도에 올라갔어요.`, `“${form.name}” is now on the map as a hairstyle of ${done}.`)}
+        />
         <div className="flex gap-3 text-sm">
-          <a href="/admin/salons" className="underline">미용실 관리로</a>
-          <button type="button" className="underline" onClick={() => window.close()}>이 창 닫기</button>
+          <a href="/admin/salons" className="underline">{L("미용실 관리로", "Go to salons")}</a>
+          <button type="button" className="underline" onClick={() => window.close()}>{L("이 창 닫기", "Close this window")}</button>
         </div>
       </div>
     )
@@ -144,7 +152,10 @@ export default function SalonStyleUploadPage() {
   const color = typeof payload.spec.color === "string" ? payload.spec.color : "#6b5a4a"
   return (
     <div className="max-w-2xl space-y-5">
-      <PageHeader title="스타일 올리기" description="GYEOL 에서 만든 머리를 내 미용실 헤어스타일로 등록합니다." />
+      <PageHeader
+        title={L("스타일 올리기", "Post a style")}
+        description={L("GYEOL 에서 만든 머리를 내 미용실 헤어스타일로 등록합니다.", "Register a hairstyle made in GYEOL as one of your salon’s styles.")}
+      />
       {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
 
       <div className="flex items-center gap-4 rounded-md border p-3">
@@ -155,54 +166,61 @@ export default function SalonStyleUploadPage() {
           <span className="h-24 w-24 rounded" style={{ background: color }} />
         )}
         <div className="text-sm text-muted-foreground">
-          <p>머리색 <span className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} /> {color}</p>
-          <p>구역 {Object.keys((payload.spec.cut as object) ?? {}).length}개 · 길이는 손님 두상 비율에 맞춰 적용돼요</p>
+          <p>{L("머리색", "Hair color")} <span className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} /> {color}</p>
+          <p>
+            {L(
+              `구역 ${Object.keys((payload.spec.cut as object) ?? {}).length}개 · 길이는 손님 두상 비율에 맞춰 적용돼요`,
+              `${Object.keys((payload.spec.cut as object) ?? {}).length} sections · lengths adapt to each customer’s head proportions`
+            )}
+          </p>
         </div>
       </div>
 
       {!salons.length ? (
         <p className="text-sm">
-          먼저 <a href="/admin/salons" className="underline">미용실을 등록</a>해 주세요. 등록한 뒤 앱에서 다시 「미용실에 올리기」를 누르면 됩니다.
+          {L("먼저 ", "First ")}
+          <a href="/admin/salons" className="underline">{L("미용실을 등록", "add a salon")}</a>
+          {L("해 주세요. 등록한 뒤 앱에서 다시 「미용실에 올리기」를 누르면 됩니다.", ". Then tap “Post to salon” again in the app.")}
         </p>
       ) : (
         <form onSubmit={save} className="space-y-3">
           <label className="block text-sm">
-            미용실
+            {L("미용실", "Salon")}
             <select className={input} value={form.salonId} onChange={(e) => setForm({ ...form, salonId: e.target.value })} required>
-              <option value="">골라 주세요</option>
+              <option value="">{L("골라 주세요", "Choose")}</option>
               {salons.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}{s.store_name && s.store_name !== s.name ? ` · ${s.store_name}` : ""}</option>
               ))}
             </select>
           </label>
           <label className="block text-sm">
-            스타일 이름
+            {L("스타일 이름", "Style name")}
             <input className={input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={80} required />
           </label>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label className="block text-sm">
-              대상
+              {L("대상", "For")}
               <select className={input} value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-                <option value="both">공용</option>
-                <option value="female">여성</option>
-                <option value="male">남성</option>
+                <option value="both">{L("공용", "Unisex")}</option>
+                <option value="female">{L("여성", "Women")}</option>
+                <option value="male">{L("남성", "Men")}</option>
               </select>
             </label>
             <label className="block text-sm">
-              가격
-              <input className={input} type="number" min={0} step="any" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="문의" />
+              {L("가격", "Price")}
+              <input className={input} type="number" min={0} step="any" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder={L("문의", "On request")} />
             </label>
             <label className="block text-sm">
-              통화
-              <input className={input} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} placeholder="기본" maxLength={3} />
+              {L("통화", "Currency")}
+              <input className={input} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} placeholder={L("기본", "Default")} maxLength={3} />
             </label>
             <label className="block text-sm">
-              소요(분)
+              {L("소요(분)", "Duration (min)")}
               <input className={input} type="number" min={0} value={form.duration_min} onChange={(e) => setForm({ ...form, duration_min: e.target.value })} />
             </label>
           </div>
           <button type="submit" disabled={busy} className="rounded-md bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
-            {busy ? "올리는 중…" : "지도에 올리기"}
+            {busy ? L("올리는 중…", "Posting…") : L("지도에 올리기", "Post to the map")}
           </button>
         </form>
       )}

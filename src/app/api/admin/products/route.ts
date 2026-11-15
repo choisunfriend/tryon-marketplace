@@ -3,6 +3,8 @@ import { getAssetsBucket } from "@/lib/assets-bucket"
 import { cleanupModelFolder } from "@/lib/model-cleanup"
 import { fail, noStore, requireAdmin } from "@/lib/admin-guard"
 import { createProduct, listProducts, MAX_PRODUCT_BODY } from "@/lib/products-db"
+import { withLang } from "@/i18n/api"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 관리자 상품 — GET 목록 · POST 등록 (D1 직접)
@@ -15,7 +17,7 @@ import { createProduct, listProducts, MAX_PRODUCT_BODY } from "@/lib/products-db
 
 const STORE_ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const g = await requireAdmin(request)
   if ("err" in g) return g.err
   const { session, db } = g
@@ -25,28 +27,28 @@ export async function GET(request: Request) {
     const products = await listProducts(db, storeId)
     return NextResponse.json({ success: true, products }, { headers: noStore })
   } catch (e) {
-    return fail(e instanceof Error ? e.message : "목록을 읽지 못했습니다", 500)
+    return fail(e instanceof Error ? e.message : bi("목록을 읽지 못했습니다", "Couldn't load the list"), 500)
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const g = await requireAdmin(request, { write: true })
   if ("err" in g) return g.err
   const { session, db } = g
 
   const text = await request.text()
-  if (text.length > MAX_PRODUCT_BODY) return fail("요청이 너무 큽니다", 413)
+  if (text.length > MAX_PRODUCT_BODY) return fail(bi("요청이 너무 큽니다", "Request is too large"), 413)
   let body: Record<string, unknown>
   try {
     body = JSON.parse(text)
   } catch {
-    return fail("JSON 형식이 아닙니다", 400)
+    return fail(bi("JSON 형식이 아닙니다", "Not valid JSON"), 400)
   }
-  if (!body || typeof body !== "object" || !String(body.name ?? "").trim()) return fail("상품 이름이 필요합니다", 400)
+  if (!body || typeof body !== "object" || !String(body.name ?? "").trim()) return fail(bi("상품 이름이 필요합니다", "Product name is required"), 400)
 
   if (session.role === "platform") {
     const sid = typeof body.store_id === "string" && STORE_ID_RE.test(body.store_id) ? body.store_id : "default"
-    if (!(await db.prepare(`SELECT 1 FROM stores WHERE id = ?`).bind(sid).first())) return fail("없는 입점사입니다", 400)
+    if (!(await db.prepare(`SELECT 1 FROM stores WHERE id = ?`).bind(sid).first())) return fail(bi("없는 입점사입니다", "That store doesn't exist"), 400)
     body.store_id = sid
   } else {
     body.store_id = session.sid // 입점사 계정은 다른 입점사로 못 넣음
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     await cleanupAfterSave(product)
     return NextResponse.json({ success: true, product }, { status: 201, headers: noStore })
   } catch (e) {
-    return fail(e instanceof Error ? e.message : "등록하지 못했습니다", 500)
+    return fail(e instanceof Error ? e.message : bi("등록하지 못했습니다", "Couldn't create"), 500)
   }
 }
 
@@ -73,3 +75,6 @@ async function cleanupAfterSave(product: Record<string, unknown> | null | undefi
     /* 정리 실패는 저장 결과에 영향 없음 */
   }
 }
+
+export const GET = withLang(handleGET)
+export const POST = withLang(handlePOST)

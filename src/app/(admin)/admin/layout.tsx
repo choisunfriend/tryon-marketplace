@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react"
 import { LayoutDashboard, Package, Users, RefreshCw, LogOut, Store, Wallet, Scissors } from "lucide-react"
 import { TranslateGuard } from "@/components/translate-guard"
+import { LangSwitch } from "@/components/i18n/lang-switch"
+import { useL } from "@/i18n/client"
 
 // (2026-11-01) 메뉴는 Next <Link>(화면 안 이동) 대신 일반 <a>(페이지 새로 열기) — Cloudflare 배포에서 눌러도 반응 없는 문제를 피함.
 //   좁은 화면(폰)에서는 왼쪽 메뉴가 숨어 있어 위쪽 가로 메뉴를 따로 둠.
@@ -12,15 +14,15 @@ import { TranslateGuard } from "@/components/translate-guard"
 
 // platform: true → 플랫폼 운영자에게만 보임 (서버 middleware 도 같은 규칙으로 막음)
 const adminNav = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "입점사", href: "/admin/stores", icon: Store, platform: true },
-  { name: "Orders", href: "/admin/orders", icon: Package },
-  { name: "Products", href: "/admin/products", icon: Package },
-  { name: "정산", href: "/admin/settlements", icon: Wallet },
-  { name: "R2 동기화", href: "/admin/sync", icon: RefreshCw, platform: true },
+  { ko: "대시보드", en: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { ko: "입점사", en: "Stores", href: "/admin/stores", icon: Store, platform: true },
+  { ko: "주문", en: "Orders", href: "/admin/orders", icon: Package },
+  { ko: "상품", en: "Products", href: "/admin/products", icon: Package },
+  { ko: "정산", en: "Settlements", href: "/admin/settlements", icon: Wallet },
+  { ko: "R2 동기화", en: "R2 sync", href: "/admin/sync", icon: RefreshCw, platform: true },
   // (2026-11-14) 「3D 굽기」 메뉴 뺌 — 상품 등록·수정 화면의 3D 칸 옆 「굽기」 버튼으로 옮김 (화면 /admin/bake 은 남아 있음)
-  { name: "미용실", href: "/admin/salons", icon: Scissors }, // (2026-11-01) 미용실 지도·헤어스타일
-  { name: "Customers", href: "/admin/customers", icon: Users },
+  { ko: "미용실", en: "Salons", href: "/admin/salons", icon: Scissors }, // (2026-11-01) 미용실 지도·헤어스타일
+  { ko: "고객", en: "Customers", href: "/admin/customers", icon: Users },
 ]
 
 type Me = { role: "platform" | "owner" | "staff"; store: { name: string } | null }
@@ -34,6 +36,7 @@ async function logout() {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { L } = useL()
   const [me, setMe] = useState<Me | null>(null)
   useEffect(() => {
     fetch("/api/admin/me", { cache: "no-store" })
@@ -41,16 +44,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((d) => d?.success && setMe({ role: d.role, store: d.store }))
       .catch(() => {})
   }, [])
-  const nav = adminNav.filter((i) => !i.platform || me?.role === "platform")
-  const who = !me ? "" : me.role === "platform" ? "플랫폼 운영자" : `${me.store?.name ?? ""} · ${me.role === "owner" ? "대표" : "직원"}`
+  const nav = adminNav
+    .filter((i) => !i.platform || me?.role === "platform")
+    .map((i) => ({ ...i, name: L(i.ko, i.en) }))
+  const who = !me
+    ? ""
+    : me.role === "platform"
+      ? L("플랫폼 운영자", "Platform operator")
+      : `${me.store?.name ?? ""} · ${me.role === "owner" ? L("대표", "Owner") : L("직원", "Staff")}`
 
   return (
     <div className="flex min-h-screen">
-      {/* (2026-11-14) 관리자 화면 글자는 한국어 — lang="ko" 로 알려야 다른 언어 브라우저가 번역을 제안한다 */}
-      <TranslateGuard lang="ko" />
+      <TranslateGuard />
       <aside className="hidden w-64 border-r bg-neutral-50 lg:flex lg:flex-col">
-        <div className="flex h-16 items-center border-b px-6">
-          <a href="/admin" className="text-lg font-semibold">Admin</a>
+        <div className="flex h-16 items-center justify-between border-b px-6">
+          <a href="/admin" className="text-lg font-semibold">{L("관리자", "Admin")}</a>
+          <LangSwitch />
         </div>
         {who && <p className="border-b px-6 py-2 text-xs text-muted-foreground">{who}</p>}
         <nav className="space-y-1 p-4">
@@ -72,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
-            로그아웃
+            {L("로그아웃", "Sign out")}
           </button>
         </div>
       </aside>
@@ -84,8 +93,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </a>
           ))}
           <button type="button" onClick={logout} className="whitespace-nowrap rounded px-3 py-1.5 text-muted-foreground">
-            로그아웃
+            {L("로그아웃", "Sign out")}
           </button>
+          <LangSwitch className="ml-auto shrink-0" />
         </nav>
         <main className="flex-1 p-6 lg:p-8">{children}</main>
       </div>

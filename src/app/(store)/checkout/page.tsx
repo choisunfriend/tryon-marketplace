@@ -15,8 +15,10 @@ import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 import { siteConfig } from "@/lib/config"
 import type { Order } from "@/types"
+import { useL } from "@/i18n/use-l"
 
 export default function CheckoutPage() {
+  const { L } = useL()
   const router = useRouter()
   const items = useCartStore((s) => s.items)
   const getSubtotal = useCartStore((s) => s.getSubtotal)
@@ -42,7 +44,7 @@ export default function CheckoutPage() {
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold tracking-tight">Checkout</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{L("결제", "Checkout")}</h1>
       </div>
     )
   }
@@ -50,13 +52,13 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold tracking-tight">Checkout</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{L("결제", "Checkout")}</h1>
         <div className="mt-16 text-center">
           <p className="text-muted-foreground">
-            Your cart is empty. Add some products before checking out.
+            {L("장바구니가 비어 있어요. 결제하기 전에 상품을 담아 주세요.", "Your cart is empty. Add some products before checking out.")}
           </p>
           <Button className="mt-8" asChild>
-            <Link href="/shop">Continue Shopping</Link>
+            <Link href="/shop">{L("계속 쇼핑하기", "Continue Shopping")}</Link>
           </Button>
         </div>
       </div>
@@ -73,7 +75,7 @@ export default function CheckoutPage() {
     e.preventDefault()
 
     if (!form.email || !form.firstName || !form.lastName || !form.line1 || !form.city || !form.state || !form.postalCode) {
-      toast.error("Please fill in all required fields")
+      toast.error(L("필수 항목을 모두 채워 주세요", "Please fill in all required fields"))
       return
     }
 
@@ -128,13 +130,13 @@ export default function CheckoutPage() {
 
     addOrder(order)
     clearCart()
-    toast.success("Order placed successfully!")
+    toast.success(L("주문을 완료했어요!", "Order placed successfully!"))
     router.push(`/checkout/success?order_id=${orderId}`)
   }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Checkout</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{L("결제", "Checkout")}</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-5">
         {/* Form */}
@@ -142,11 +144,11 @@ export default function CheckoutPage() {
           {/* Contact */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Contact Information</CardTitle>
+              <CardTitle className="text-lg">{L("연락처", "Contact Information")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{L("이메일", "Email")}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -163,38 +165,38 @@ export default function CheckoutPage() {
           {/* Shipping */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Shipping Address</CardTitle>
+              <CardTitle className="text-lg">{L("배송지", "Shipping Address")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First name</Label>
+                  <Label htmlFor="firstName">{L("이름", "First name")}</Label>
                   <Input id="firstName" name="firstName" value={form.firstName} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last name</Label>
+                  <Label htmlFor="lastName">{L("성", "Last name")}</Label>
                   <Input id="lastName" name="lastName" value={form.lastName} onChange={handleChange} required />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="line1">Address</Label>
+                <Label htmlFor="line1">{L("주소", "Address")}</Label>
                 <Input id="line1" name="line1" value={form.line1} onChange={handleChange} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="line2">Apartment, suite, etc. (optional)</Label>
+                <Label htmlFor="line2">{L("상세 주소 (선택)", "Apartment, suite, etc. (optional)")}</Label>
                 <Input id="line2" name="line2" value={form.line2} onChange={handleChange} />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="city">{L("도시", "City")}</Label>
                   <Input id="city" name="city" value={form.city} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">{L("시·도", "State")}</Label>
                   <Input id="state" name="state" value={form.state} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="postalCode">ZIP code</Label>
+                  <Label htmlFor="postalCode">{L("우편번호", "ZIP code")}</Label>
                   <Input id="postalCode" name="postalCode" value={form.postalCode} onChange={handleChange} required />
                 </div>
               </div>
@@ -204,12 +206,14 @@ export default function CheckoutPage() {
           {/* Payment note */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Payment</CardTitle>
+              <CardTitle className="text-lg">{L("결제 수단", "Payment")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                This is a demo store. No real payment will be processed.
-                In production, this section connects to your payment provider.
+                {L(
+                  "데모 상점이라 실제 결제는 되지 않아요. 실제 운영에서는 이 부분이 결제 서비스와 연결됩니다.",
+                  "This is a demo store. No real payment will be processed. In production, this section connects to your payment provider."
+                )}
               </p>
             </CardContent>
           </Card>
@@ -219,7 +223,7 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2">
           <Card className="sticky top-24">
             <CardHeader>
-              <CardTitle className="text-lg">Order Summary</CardTitle>
+              <CardTitle className="text-lg">{L("주문 요약", "Order Summary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {items.map((item) => (
@@ -233,7 +237,7 @@ export default function CheckoutPage() {
               <Separator />
               <CartSummary subtotal={subtotal} />
               <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                {loading ? "Processing..." : "Place Order"}
+                {loading ? L("처리 중...", "Processing...") : L("주문하기", "Place Order")}
               </Button>
             </CardContent>
           </Card>

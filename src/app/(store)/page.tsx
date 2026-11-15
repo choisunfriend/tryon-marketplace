@@ -10,6 +10,8 @@ import { ProductGrid } from "@/components/products/product-grid"
 import { NewsletterForm } from "@/components/layout/newsletter-form"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { productRepository, categoryRepository } from "@/lib/repositories"
+import { getL } from "@/i18n/server"
+import { catName } from "@/i18n/catalog"
 
 export const metadata: Metadata = {
   title: "Next.js Ecommerce Starter — Free Open-Source Template | Epic Design Labs",
@@ -38,6 +40,7 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
+  const { L } = await getL()
   const categories = await categoryRepository.list()
   const featuredProducts = await productRepository.getFeatured(4)
 
@@ -48,25 +51,24 @@ export default async function HomePage() {
       <section className="relative flex h-[650px] items-center justify-center bg-neutral-50">
         <div className="mx-auto max-w-3xl px-4 text-center">
           <Badge variant="secondary" className="mb-4">
-            Free shipping on orders over {formatPrice(siteConfig.freeShippingThreshold)}
+            {L(`${formatPrice(siteConfig.freeShippingThreshold)} 이상 주문 시 무료 배송`, `Free shipping on orders over ${formatPrice(siteConfig.freeShippingThreshold)}`)}
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Next.js Ecommerce Starter
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            A free, open-source ecommerce template built with Next.js, Tailwind CSS, and shadcn/ui.
-            Production-ready, fully responsive, and designed to connect to any checkout system.
+            {L("Next.js, Tailwind CSS, shadcn/ui로 만든 무료 오픈소스 쇼핑몰 템플릿. 바로 운영할 수 있고, 모든 화면 크기에 맞춰지며, 어떤 결제 시스템과도 연결됩니다.", "A free, open-source ecommerce template built with Next.js, Tailwind CSS, and shadcn/ui. Production-ready, fully responsive, and designed to connect to any checkout system.")}
           </p>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
               <Link href="/shop">
-                Shop Now
+                {L("쇼핑하기", "Shop Now")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="https://github.com/Epic-Design-Labs/nextjs-ecommerce-starter" target="_blank" rel="noopener">
-                View on GitHub
+                {L("GitHub에서 보기", "View on GitHub")}
               </Link>
             </Button>
           </div>
@@ -77,13 +79,13 @@ export default async function HomePage() {
       <section className="mx-auto w-full max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">
-            Shop by Category
+            {L("카테고리별 쇼핑", "Shop by Category")}
           </h2>
           <Link
             href="/shop"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            View all
+            {L("전체 보기", "View all")}
           </Link>
         </div>
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -92,7 +94,7 @@ export default async function HomePage() {
               <div className="relative aspect-square overflow-hidden rounded-lg bg-neutral-100">
                 <Image
                   src={category.image?.url ?? PLACEHOLDER_IMAGE}
-                  alt={category.image?.alt ?? category.name}
+                  alt={catName(L, category)}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 768px) 50vw, 16vw"
@@ -100,7 +102,7 @@ export default async function HomePage() {
               </div>
               <div className="mt-3 text-center">
                 <h3 className="text-sm font-medium group-hover:underline">
-                  {category.name}
+                  {catName(L, category)}
                 </h3>
               </div>
             </Link>
@@ -112,13 +114,13 @@ export default async function HomePage() {
       <section className="mx-auto w-full max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">
-            Featured Products
+            {L("추천 상품", "Featured Products")}
           </h2>
           <Link
             href="/shop"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            View all
+            {L("전체 보기", "View all")}
           </Link>
         </div>
         <div className="mt-8">
@@ -130,22 +132,21 @@ export default async function HomePage() {
       <section className="border-t bg-neutral-50">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center px-4 py-16 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Need help building your store?
+            {L("상점 만들기에 도움이 필요하신가요?", "Need help building your store?")}
           </h2>
           <p className="mt-4 max-w-xl text-muted-foreground">
-            This starter is free and open source. Grab it from GitHub and build your own,
-            or work with our team at Epic Design Labs to bring your vision to life.
+            {L("이 템플릿은 무료 오픈소스입니다. GitHub에서 받아 직접 만들거나, Epic Design Labs 팀과 함께 원하는 상점을 만들어 보세요.", "This starter is free and open source. Grab it from GitHub and build your own, or work with our team at Epic Design Labs to bring your vision to life.")}
           </p>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Button size="lg" asChild>
               <Link href="https://github.com/Epic-Design-Labs/nextjs-ecommerce-starter" target="_blank" rel="noopener">
-                Get the Starter
+                {L("템플릿 받기", "Get the Starter")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="https://epicdesignlabs.com" target="_blank" rel="noopener">
-                Hire a Developer
+                {L("개발자에게 맡기기", "Hire a Developer")}
               </Link>
             </Button>
           </div>
@@ -156,10 +157,10 @@ export default async function HomePage() {
       <section className="bg-neutral-900 text-white">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center px-4 py-16 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Join our newsletter
+            {L("뉴스레터 구독", "Join our newsletter")}
           </h2>
           <p className="mt-4 text-neutral-400">
-            Get updates on new arrivals and exclusive offers.
+            {L("신상품과 특별 혜택 소식을 받아 보세요.", "Get updates on new arrivals and exclusive offers.")}
           </p>
           <NewsletterForm />
         </div>

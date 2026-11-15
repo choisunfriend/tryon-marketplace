@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { isPlatformRequest } from "@/lib/security"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
+import { withLang } from "@/i18n/api"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // R2 상품 폴더 목록 — /api/assets/list
@@ -15,15 +17,15 @@ interface FolderInfo {
   uploaded: string | null
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   // (2026-11-01) 버킷 전체 폴더가 보이므로 플랫폼 운영자만
   if (!(await isPlatformRequest(request))) {
-    return NextResponse.json({ success: false, error: "플랫폼 운영자만 볼 수 있습니다" }, { status: 403 })
+    return NextResponse.json({ success: false, error: bi("플랫폼 운영자만 볼 수 있습니다", "Only the platform operator can see this") }, { status: 403 })
   }
   const bucket = await getAssetsBucket()
   if (!bucket) {
     return NextResponse.json(
-      { success: false, error: "R2 바인딩(ASSETS_BUCKET)이 없습니다" },
+      { success: false, error: bi("R2 바인딩(ASSETS_BUCKET)이 없습니다", "No R2 binding (ASSETS_BUCKET)") },
       { status: 500 }
     )
   }
@@ -62,3 +64,5 @@ export async function GET(request: Request) {
     { headers: { "Cache-Control": "no-store" } }
   )
 }
+
+export const GET = withLang(handleGET)

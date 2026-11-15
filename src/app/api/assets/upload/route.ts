@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { assetUrl, getAssetsBucket } from "@/lib/assets-bucket"
 import { canUseFolder, requireAdmin } from "@/lib/admin-guard"
+import { withLang } from "@/i18n/api"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 관리자 파일 업로드 → R2
@@ -122,44 +124,44 @@ function safeName(name: string, ext: string): string {
   return `${base || `file-${Date.now().toString(36)}`}.${ext}`
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const g = await requireAdmin(request, { write: true })
   if ("err" in g) return g.err
 
   const bucket = await getAssetsBucket()
   if (!bucket) {
-    return fail("R2 바인딩(ASSETS_BUCKET)이 없습니다 — wrangler.jsonc 확인", 500)
+    return fail(bi("R2 바인딩(ASSETS_BUCKET)이 없습니다 — wrangler.jsonc 확인", "No R2 binding (ASSETS_BUCKET) — check wrangler.jsonc"), 500)
   }
 
   let form: FormData
   try {
     form = await request.formData()
   } catch {
-    return fail("multipart/form-data 형식이 아닙니다")
+    return fail(bi("multipart/form-data 형식이 아닙니다", "Not multipart/form-data"))
   }
 
   const file = form.get("file")
   const kind = String(form.get("kind") ?? "")
   const folder = String(form.get("folder") ?? "").trim()
 
-  if (!(file instanceof File)) return fail("file 이 없습니다")
-  if (kind !== "image" && kind !== "model") return fail("kind 는 image 또는 model")
-  if (!/^[A-Za-z0-9_-]{1,80}$/.test(folder)) return fail("folder 이름이 올바르지 않습니다")
+  if (!(file instanceof File)) return fail(bi("file 이 없습니다", "No file"))
+  if (kind !== "image" && kind !== "model") return fail(bi("kind 는 image 또는 model", "kind must be image or model"))
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(folder)) return fail(bi("folder 이름이 올바르지 않습니다", "Invalid folder name"))
   // (2026-11-01) 입점사는 자기 폴더에만 (남의 상품 파일 덮어쓰기 방지)
-  if (!(await canUseFolder(g.session, g.db, folder))) return fail("이 폴더에 올릴 권한이 없습니다", 403)
+  if (!(await canUseFolder(g.session, g.db, folder))) return fail(bi("이 폴더에 올릴 권한이 없습니다", "No permission to upload to this folder"), 403)
 
   const rule = RULES[kind]
   const ext = (file.name.split(".").pop() ?? "").toLowerCase()
   if (!(rule.ext as readonly string[]).includes(ext)) {
-    return fail(`허용 확장자: ${rule.ext.join(", ")}`)
+    return fail(bi(`허용 확장자: ${rule.ext.join(", ")}`, `Allowed extensions: ${rule.ext.join(", ")}`))
   }
   if (file.size > rule.maxBytes) {
-    return fail(`파일이 너무 큽니다 (최대 ${rule.maxBytes / 1024 / 1024}MB)`)
+    return fail(bi(`파일이 너무 큽니다 (최대 ${rule.maxBytes / 1024 / 1024}MB)`, `File is too large (max ${rule.maxBytes / 1024 / 1024}MB)`))
   }
 
   let data = await file.arrayBuffer()
   if (!looksLike(ext, new Uint8Array(data.slice(0, 512)))) {
-    return fail("파일 내용이 확장자와 맞지 않습니다")
+    return fail(bi("파일 내용이 확장자와 맞지 않습니다", "The file content doesn't match its extension"))
   }
   // (2026-11-14) OBJ·MTL 안의 파일 참조를 저장 이름 규칙에 맞춤 (mtllib·map_Kd 연결 유지)
   let refs: string[] = []
@@ -185,3 +187,5 @@ export async function POST(request: Request) {
     refs, // OBJ 면 mtllib 이름들, MTL 이면 map_Kd 이미지 이름들 — 화면이 빠진 파일을 알려 줄 때 씀
   })
 }
+
+export const POST = withLang(handlePOST)

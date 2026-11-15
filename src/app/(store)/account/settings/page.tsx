@@ -10,8 +10,10 @@ import { PageHeader } from "@/components/ui/page-header"
 import { useAuthGuard } from "@/hooks/use-auth-guard"
 import { useAuthStore } from "@/store/auth"
 import { toast } from "sonner"
+import { useL } from "@/i18n/use-l"
 
 export default function SettingsPage() {
+  const { L } = useL()
   const { user, isReady } = useAuthGuard()
   const updateProfile = useAuthStore((s) => s.updateProfile)
 
@@ -32,34 +34,34 @@ export default function SettingsPage() {
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
     updateProfile({ firstName, lastName, email })
-    toast.success("Profile updated")
+    toast.success(L("프로필을 바꿨어요", "Profile updated"))
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-      <PageHeader title="Settings" />
+      <PageHeader title={L("설정", "Settings")} />
 
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
+          <CardTitle>{L("프로필 정보", "Profile Information")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
+                <Label htmlFor="firstName">{L("이름", "First name")}</Label>
                 <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
+                <Label htmlFor="lastName">{L("성", "Last name")}</Label>
                 <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{L("이메일", "Email")}</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit">{L("변경 저장", "Save Changes")}</Button>
           </form>
         </CardContent>
       </Card>
@@ -68,23 +70,23 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
+          <CardTitle>{L("비밀번호 변경", "Change Password")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => { e.preventDefault(); toast.success("Password updated (demo)") }} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); toast.success(L("비밀번호를 바꿨어요 (데모)", "Password updated (demo)")) }} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current password</Label>
+              <Label htmlFor="currentPassword">{L("현재 비밀번호", "Current password")}</Label>
               <Input id="currentPassword" type="password" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New password</Label>
+              <Label htmlFor="newPassword">{L("새 비밀번호", "New password")}</Label>
               <Input id="newPassword" type="password" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm new password</Label>
+              <Label htmlFor="confirmPassword">{L("새 비밀번호 확인", "Confirm new password")}</Label>
               <Input id="confirmPassword" type="password" />
             </div>
-            <Button type="submit">Update Password</Button>
+            <Button type="submit">{L("비밀번호 바꾸기", "Update Password")}</Button>
           </form>
         </CardContent>
       </Card>

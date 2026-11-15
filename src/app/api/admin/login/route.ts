@@ -10,6 +10,8 @@ import {
 } from "@/lib/security"
 import { getProductsDb } from "@/lib/products-db"
 import { findUserByEmail, getStore, touchLogin } from "@/lib/stores-db"
+import { withLang } from "@/i18n/api"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 관리자 로그인 — POST /api/admin/login  { email?, password }
@@ -34,14 +36,14 @@ function clientIp(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? "unknown"
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isSameOriginWrite(request)) {
-    return NextResponse.json({ success: false, error: "허용되지 않은 요청 출처입니다" }, { status: 403 })
+    return NextResponse.json({ success: false, error: bi("허용되지 않은 요청 출처입니다", "Request origin not allowed") }, { status: 403 })
   }
 
   if (!process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET.length < 32) {
     return NextResponse.json(
-      { success: false, error: "서버에 ADMIN_SESSION_SECRET(32자 이상)이 설정되지 않았습니다" },
+      { success: false, error: bi("서버에 ADMIN_SESSION_SECRET(32자 이상)이 설정되지 않았습니다", "ADMIN_SESSION_SECRET (32+ characters) is not set on the server") },
       { status: 503 }
     )
   }
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
   const rec = fails.get(ip)
   if (rec && now - rec.at < WINDOW_MS && rec.n >= MAX_FAILS) {
     return NextResponse.json(
-      { success: false, error: "시도가 너무 많습니다. 10분 뒤 다시 해 주세요" },
+      { success: false, error: bi("시도가 너무 많습니다. 10분 뒤 다시 해 주세요", "Too many attempts. Try again in 10 minutes") },
       { status: 429, headers: { "Retry-After": "600" } }
     )
   }
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
   fails.delete(ip)
   const token = await createAdminSession(result.who)
   if (!token) {
-    return NextResponse.json({ success: false, error: "세션 키 설정 오류" }, { status: 503 })
+    return NextResponse.json({ success: false, error: bi("세션 키 설정 오류", "Session key configuration error") }, { status: 503 })
   }
   return NextResponse.json(
     { success: true, role: result.who.role },
@@ -92,23 +94,23 @@ type LoginResult =
   | { ok: true; who: Omit<AdminSession, "exp"> }
   | { ok: false; status: number; error: string }
 
-const BAD_LOGIN: LoginResult = { ok: false, status: 401, error: "이메일 또는 비밀번호가 올바르지 않습니다" }
+const BAD_LOGIN: LoginResult = { ok: false, status: 401, error: bi("이메일 또는 비밀번호가 올바르지 않습니다", "Incorrect email or password") }
 
 async function loginWithEnvPassword(password: string): Promise<LoginResult> {
   const expected = process.env.ADMIN_PASSWORD ?? ""
-  if (expected.length < 12) return { ok: false, status: 400, error: "이메일을 입력해 주세요" }
-  if (!(await safeEqual(password, expected))) return { ok: false, status: 401, error: "비밀번호가 올바르지 않습니다" }
+  if (expected.length < 12) return { ok: false, status: 400, error: bi("이메일을 입력해 주세요", "Please enter your email") }
+  if (!(await safeEqual(password, expected))) return { ok: false, status: 401, error: bi("비밀번호가 올바르지 않습니다", "Incorrect password") }
   return { ok: true, who: { uid: "env", role: "platform", sid: null, slug: null } }
 }
 
 async function loginWithAccount(email: string, password: string): Promise<LoginResult> {
   const db = await getProductsDb()
-  if (!db) return { ok: false, status: 503, error: "D1 바인딩(DB)이 없습니다" }
+  if (!db) return { ok: false, status: 503, error: bi("D1 바인딩(DB)이 없습니다", "No D1 binding (DB)") }
   let user
   try {
     user = await findUserByEmail(db, email)
   } catch {
-    return { ok: false, status: 503, error: "계정 테이블이 없습니다 — migrations/0001_multi_store.sql 을 먼저 실행하세요" }
+    return { ok: false, status: 503, error: bi("계정 테이블이 없습니다 — migrations/0001_multi_store.sql 을 먼저 실행하세요", "No accounts table — run migrations/0001_multi_store.sql first") }
   }
   // 계정이 없어도 같은 시간 걸리게 가짜 해시로 한 번 비교
   const hash =
@@ -127,16 +129,18 @@ async function loginWithAccount(email: string, password: string): Promise<LoginR
     return {
       ok: false,
       status: 403,
-      error: `입점 신청이 승인되지 않았습니다${store.review_note ? ` — ${store.review_note}` : ""}`,
+      error: bi(`입점 신청이 승인되지 않았습니다${store.review_note ? ` — ${store.review_note}` : ""}`, `Your store application was not approved${store.review_note ? ` — ${store.review_note}` : ""}`),
     }
   }
   if (store.status !== "active") {
     return {
       ok: false,
       status: 403,
-      error: store.status === "pending" ? "입점 심사 중입니다. 승인 뒤 로그인할 수 있습니다" : "정지된 입점사입니다",
+      error: store.status === "pending" ? bi("입점 심사 중입니다. 승인 뒤 로그인할 수 있습니다", "Your application is under review. You can sign in once it's approved") : bi("정지된 입점사입니다", "This store is suspended"),
     }
   }
   await touchLogin(db, user.id)
   return { ok: true, who: { uid: user.id, role: user.role, sid: store.id, slug: store.slug } }
 }
+
+export const POST = withLang(handlePOST)

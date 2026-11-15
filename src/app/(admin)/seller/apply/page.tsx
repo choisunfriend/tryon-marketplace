@@ -2,11 +2,13 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- 관리자·신청 화면은 일반 <a> 이동 */
 
 import { FormEvent, useEffect, useRef, useState } from "react"
-import { TranslateGuard } from "@/components/translate-guard"  // (2026-11-14) lang="ko" — 브라우저 번역 제안
+import { TranslateGuard } from "@/components/translate-guard"
+import { LangSwitch } from "@/components/i18n/lang-switch"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // (2026-11-01) 입점 신청 — /seller/apply (누구나)
-// 나라를 고르면 그 나라에 필요한 항목만 보임. 제출하면 "심사 중"으로 들어가고
+// 나라를 고르면 그 나라에 필요한 항목만 보임. (2026-11-14) 글자는 나라가 아니라 화면 언어(EN/한국어)를 따름. 제출하면 "심사 중"으로 들어가고
 // 운영자가 /admin/stores 에서 승인하면 /admin-login 으로 로그인할 수 있음.
 // ============================================================================
 
@@ -42,8 +44,9 @@ const T = {
 const input = "w-full rounded-md border px-3 py-2 text-sm"
 
 export default function SellerApplyPage() {
-  const [country, setCountry] = useState<"KR" | "US">("KR")
-  const t = T[country]
+  const { L, lang } = useL()
+  const [country, setCountry] = useState<"KR" | "US">(lang === "ko" ? "KR" : "US")
+  const t = T[lang === "ko" ? "KR" : "US"]
   const [f, setF] = useState<Record<string, string>>({})
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setF((p) => ({ ...p, [k]: e.target.value }))
   const [busy, setBusy] = useState(false)
@@ -104,17 +107,18 @@ export default function SellerApplyPage() {
 
   return (
     <main className="mx-auto max-w-xl p-6">
-      <TranslateGuard lang="ko" />
+      <TranslateGuard />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <LangSwitch className="ml-auto mr-2" />
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value as "KR" | "US")}
           className="rounded-md border px-2 py-1 text-sm"
-          aria-label="Country"
+          aria-label={L("나라", "Country")}
         >
-          <option value="KR">🇰🇷 대한민국</option>
-          <option value="US">🇺🇸 United States</option>
+          <option value="KR">🇰🇷 {L("대한민국", "South Korea")}</option>
+          <option value="US">🇺🇸 {L("미국", "United States")}</option>
         </select>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">{t.lead}</p>
@@ -138,31 +142,31 @@ export default function SellerApplyPage() {
           <legend className="mb-2 font-medium">{t.business}</legend>
           {country === "KR" ? (
             <>
-              <input className={input} placeholder="상호 (사업자등록증 상의 이름)" value={f.legalName ?? ""} onChange={set("legalName")} required />
-              <input className={input} placeholder="대표자" value={f.representative ?? ""} onChange={set("representative")} required />
-              <input className={input} placeholder="사업자등록번호 (예: 123-45-67890)" value={f.businessNumber ?? ""} onChange={set("businessNumber")} required />
-              <input className={input} placeholder="통신판매업 신고번호 (예: 제2026-서울강남-0000호)" value={f.mailOrderNumber ?? ""} onChange={set("mailOrderNumber")} required />
-              <input className={input} placeholder="사업장 주소" value={f.address ?? ""} onChange={set("address")} required />
+              <input className={input} placeholder={L("상호 (사업자등록증 상의 이름)", "Business name (as on the registration certificate)")} value={f.legalName ?? ""} onChange={set("legalName")} required />
+              <input className={input} placeholder={L("대표자", "Representative")} value={f.representative ?? ""} onChange={set("representative")} required />
+              <input className={input} placeholder={L("사업자등록번호 (예: 123-45-67890)", "Business registration number (e.g. 123-45-67890)")} value={f.businessNumber ?? ""} onChange={set("businessNumber")} required />
+              <input className={input} placeholder={L("통신판매업 신고번호 (예: 제2026-서울강남-0000호)", "Mail-order business number (e.g. 제2026-서울강남-0000호)")} value={f.mailOrderNumber ?? ""} onChange={set("mailOrderNumber")} required />
+              <input className={input} placeholder={L("사업장 주소", L("사업장 주소", "Business address"))} value={f.address ?? ""} onChange={set("address")} required />
             </>
           ) : (
             <>
-              <input className={input} placeholder="Legal business name" value={f.legalName ?? ""} onChange={set("legalName")} required />
-              <input className={input} placeholder="Business address" value={f.address ?? ""} onChange={set("address")} required />
-              <input className={input} type="url" placeholder="Website (optional)" value={f.website ?? ""} onChange={set("website")} />
+              <input className={input} placeholder={L("법인·사업자 이름", "Legal business name")} value={f.legalName ?? ""} onChange={set("legalName")} required />
+              <input className={input} placeholder={L("사업장 주소", "Business address")} value={f.address ?? ""} onChange={set("address")} required />
+              <input className={input} type="url" placeholder={L("웹사이트 (선택)", "Website (optional)")} value={f.website ?? ""} onChange={set("website")} />
             </>
           )}
         </fieldset>
 
         {country === "KR" ? (
           <fieldset className="space-y-3">
-            <legend className="mb-2 font-medium">정산 계좌</legend>
-            <input className={input} placeholder="은행" value={f.bank ?? ""} onChange={set("bank")} required />
-            <input className={input} placeholder="예금주" value={f.holder ?? ""} onChange={set("holder")} required />
-            <input className={input} inputMode="numeric" placeholder="계좌번호 (숫자만)" value={f.number ?? ""} onChange={set("number")} required />
+            <legend className="mb-2 font-medium">{L("정산 계좌", "Payout account")}</legend>
+            <input className={input} placeholder={L("은행", "Bank")} value={f.bank ?? ""} onChange={set("bank")} required />
+            <input className={input} placeholder={L("예금주", "Account holder")} value={f.holder ?? ""} onChange={set("holder")} required />
+            <input className={input} inputMode="numeric" placeholder={L("계좌번호 (숫자만)", "Account number (digits only)")} value={f.number ?? ""} onChange={set("number")} required />
           </fieldset>
         ) : (
           <p className="rounded-md bg-neutral-50 p-3 text-sm text-muted-foreground">
-            Payouts are sent through Payoneer. After approval you will get a link to connect your Payoneer account — bank and tax details are collected there.
+            {L("정산은 페이오니아(Payoneer)로 보내 드립니다. 승인되면 페이오니아 계정을 연결하는 링크를 보내 드리고, 은행·세금 정보는 그곳에서 받습니다.", "Payouts are sent through Payoneer. After approval you will get a link to connect your Payoneer account — bank and tax details are collected there.")}
           </p>
         )}
 

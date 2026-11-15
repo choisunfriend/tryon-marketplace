@@ -12,8 +12,10 @@ import { MapPin, Plus, Trash2 } from "lucide-react"
 import { useAuthGuard } from "@/hooks/use-auth-guard"
 import { useAuthStore } from "@/store/auth"
 import { toast } from "sonner"
+import { useL } from "@/i18n/use-l"
 
 export default function AddressesPage() {
+  const { L } = useL()
   const { user, isReady } = useAuthGuard()
   const addAddress = useAuthStore((s) => s.addAddress)
   const removeAddress = useAuthStore((s) => s.removeAddress)
@@ -43,7 +45,7 @@ export default function AddressesPage() {
       country: form.country,
       isDefault: (user?.addresses.length ?? 0) === 0,
     })
-    toast.success("Address added")
+    toast.success(L("주소를 추가했어요", "Address added"))
     setShowForm(false)
     setForm({ firstName: "", lastName: "", line1: "", line2: "", city: "", state: "", postalCode: "", country: "US" })
   }
@@ -52,10 +54,10 @@ export default function AddressesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-      <PageHeader title="Addresses">
+      <PageHeader title={L("주소", "Addresses")}>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Address
+          {L("주소 추가", "Add Address")}
         </Button>
       </PageHeader>
 
@@ -65,30 +67,30 @@ export default function AddressesPage() {
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>First name</Label>
+                  <Label>{L("이름", "First name")}</Label>
                   <Input name="firstName" value={form.firstName} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Last name</Label>
+                  <Label>{L("성", "Last name")}</Label>
                   <Input name="lastName" value={form.lastName} onChange={handleChange} required />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Address</Label>
+                <Label>{L("주소", "Address")}</Label>
                 <Input name="line1" value={form.line1} onChange={handleChange} required />
               </div>
               <div className="space-y-2">
-                <Label>Apt, suite (optional)</Label>
+                <Label>{L("상세 주소 (선택)", "Apt, suite (optional)")}</Label>
                 <Input name="line2" value={form.line2} onChange={handleChange} />
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>City</Label><Input name="city" value={form.city} onChange={handleChange} required /></div>
-                <div className="space-y-2"><Label>State</Label><Input name="state" value={form.state} onChange={handleChange} required /></div>
-                <div className="space-y-2"><Label>ZIP</Label><Input name="postalCode" value={form.postalCode} onChange={handleChange} required /></div>
+                <div className="space-y-2"><Label>{L("도시", "City")}</Label><Input name="city" value={form.city} onChange={handleChange} required /></div>
+                <div className="space-y-2"><Label>{L("시·도", "State")}</Label><Input name="state" value={form.state} onChange={handleChange} required /></div>
+                <div className="space-y-2"><Label>{L("우편번호", "ZIP")}</Label><Input name="postalCode" value={form.postalCode} onChange={handleChange} required /></div>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Save Address</Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit">{L("주소 저장", "Save Address")}</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>{L("취소", "Cancel")}</Button>
               </div>
             </form>
           </CardContent>
@@ -98,8 +100,8 @@ export default function AddressesPage() {
       {addresses.length === 0 && !showForm && (
         <EmptyState
           icon={MapPin}
-          title="No saved addresses"
-          description="Add an address to speed up checkout."
+          title={L("저장된 주소가 없어요", "No saved addresses")}
+          description={L("주소를 저장해 두면 결제가 빨라져요.", "Add an address to speed up checkout.")}
         />
       )}
 
@@ -111,7 +113,7 @@ export default function AddressesPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">{addr.firstName} {addr.lastName}</p>
-                    {addr.isDefault && <Badge variant="secondary" className="text-xs">Default</Badge>}
+                    {addr.isDefault && <Badge variant="secondary" className="text-xs">{L("기본", "Default")}</Badge>}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}<br />
@@ -121,8 +123,8 @@ export default function AddressesPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => { removeAddress(addr.id); toast("Address removed") }}
-                  aria-label="Remove address"
+                  onClick={() => { removeAddress(addr.id); toast(L("주소를 지웠어요", "Address removed")) }}
+                  aria-label={L("주소 지우기", "Remove address")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
