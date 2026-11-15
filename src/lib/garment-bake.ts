@@ -11,6 +11,8 @@
 export type GarmentKind = "auto" | "upper" | "lower" | "outer" | "full"
 export type BodyGender = "male" | "female"
 
+import { bi } from "@/i18n/l"
+
 export const BODY_FILES: Record<BodyGender, { url: string; neckCutFrac: number }> = {
   male: { url: "/bodies/body_male.obj", neckCutFrac: 0.9474 },
   female: { url: "/bodies/body_female.obj", neckCutFrac: 0.9427 },
@@ -249,7 +251,7 @@ export function placeGarment(src: Float32Array, body: BodyFigure, opt: PlaceOpti
         pos[i + 2] = (pos[i + 2] - cz) * s + cz
       }
     }
-    return { pos, report: { kind: "asis", scale: s, rotatedZUp: false, note: "이미 몸 좌표에 있는 옷 — 원본 크기 기준" } }
+    return { pos, report: { kind: "asis", scale: s, rotatedZUp: false, note: bi("이미 몸 좌표에 있는 옷 — 원본 크기 기준", "Already fitted to the body — original size") } }
   }
   let rotatedZUp = false
   if (gb.maxZ - gb.minZ > 1.5 * (gb.maxY - gb.minY)) {
@@ -278,15 +280,15 @@ export function placeGarment(src: Float32Array, body: BodyFigure, opt: PlaceOpti
   if (opt.kind !== "auto") {
     kind = opt.kind
   } else if (gh / gw > 2.2) {
-    kind = "full"; notes.push("세로로 긴 옷 → 전신")
+    kind = "full"; notes.push(bi("세로로 긴 옷 → 전신", "Long garment → full body"))
   } else {
     const impliedH = sWidth * gh // 폭으로 맞췄을 때 옷 높이
     const r = impliedH / bodyH
     if (Number.isFinite(r) && r > 1.05) {
-      kind = "full"; notes.push(`어깨폭으로 맞추면 몸의 ${r.toFixed(2)}배 → 전신`)
+      kind = "full"; notes.push(bi(`어깨폭으로 맞추면 몸의 ${r.toFixed(2)}배 → 전신`, `Fitting to shoulder width makes it ${r.toFixed(2)}× the body → full body`))
     } else {
       kind = "upper"
-      if (Number.isFinite(r)) notes.push(`어깨폭 기준 길이 ${r.toFixed(2)}×몸`)
+      if (Number.isFinite(r)) notes.push(bi(`어깨폭 기준 길이 ${r.toFixed(2)}×몸`, `Length by shoulder width ${r.toFixed(2)}× body`))
     }
   }
 
@@ -300,14 +302,14 @@ export function placeGarment(src: Float32Array, body: BodyFigure, opt: PlaceOpti
     const gWaist = bandWidth(pos, gb.maxY - 0.06 * gh, gb.maxY, (gb.minX + gb.maxX) / 2)
     s = waist && gWaist && gWaist.w > 0 ? (waist.w / gWaist.w) * 1.04 : (0.5 * bodyH) / gh
     const r = (s * gh) / bodyH
-    if (!(r > 0.15 && r < 0.85)) { s = (0.5 * bodyH) / gh; notes.push("허리폭 측정 불가 → 길이 기준") }
+    if (!(r > 0.15 && r < 0.85)) { s = (0.5 * bodyH) / gh; notes.push(bi("허리폭 측정 불가 → 길이 기준", "Couldn't measure waist width → using length")) }
   } else {
     s = sWidth
     const r = (s * gh) / bodyH
-    if (!(r > 0.15 && r < 1.0) || !Number.isFinite(s)) { s = (0.4 * bodyH) / gh; notes.push("어깨폭 측정 불가 → 길이 기준") }
+    if (!(r > 0.15 && r < 1.0) || !Number.isFinite(s)) { s = (0.4 * bodyH) / gh; notes.push(bi("어깨폭 측정 불가 → 길이 기준", "Couldn't measure shoulder width → using length")) }
   }
   const sFloor = ((top - floor) * 0.99) / gh
-  if (s > sFloor) { s = sFloor; notes.push("바닥 아래로 내려가 줄임") }
+  if (s > sFloor) { s = sFloor; notes.push(bi("바닥 아래로 내려가 줄임", "Shrunk so it doesn't go below the floor")) }
   s *= opt.scaleMul
 
   const gcx = garTop ? garTop.cx : (gb.minX + gb.maxX) / 2
@@ -579,7 +581,7 @@ export function bindGarment(pos: Float32Array, body: BodyFigure): GarmentBinding
 /** 같은 구성(정점·면 수)의 몸 정점 배열에 바인딩을 풀어 옷 정점 위치를 돌려준다. */
 export function applyBinding(bind: GarmentBinding, bodyPos: Float32Array, bodyFaceCount?: number): Float32Array {
   if (bodyPos.length / 3 !== bind.bodyVerts || (bodyFaceCount !== undefined && bodyFaceCount !== bind.bodyFaces)) {
-    throw new Error("몸 구성이 달라 바인딩을 풀 수 없습니다")
+    throw new Error(bi("몸 구성이 달라 바인딩을 풀 수 없습니다", "Can't apply the binding — the body mesh is different"))
   }
   const out = new Float32Array(3 * bind.count)
   for (let i = 0; i < bind.count; i++) {

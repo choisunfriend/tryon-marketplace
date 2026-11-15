@@ -13,6 +13,8 @@ import {
 import { SearchModal } from "@/components/search/search-modal"
 import { cn } from "@/lib/utils"
 import { shopLinks, mobileMenuSections } from "@/lib/navigation"
+import { useL } from "@/i18n/use-l"
+import { catName } from "@/i18n/catalog"
 import { siteConfig } from "@/lib/config"
 import { useTranslations } from "next-intl"
 import { useState, useEffect, useCallback } from "react"
@@ -30,6 +32,7 @@ export function Header({ categories = [] }: HeaderProps) {
   const allCategories = categories
   const t = useTranslations("nav")
   const tCommon = useTranslations("common")
+  const { L } = useL()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
@@ -84,7 +87,7 @@ export function Header({ categories = [] }: HeaderProps) {
                 <div key={section.label}>
                   {sectionIdx > 0 && <div className="my-4 border-t" />}
                   <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {section.label}
+                    {L(section.ko ?? section.label, section.label)}
                   </p>
                   <div className="ml-3">
                   {section.items.map((item) => {
@@ -104,13 +107,13 @@ export function Header({ categories = [] }: HeaderProps) {
                             className="flex-1 py-2.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/70"
                             onClick={() => setMobileMenuOpen(false)}
                           >
-                            {item.name}
+                            {L(item.ko ?? item.name, item.name)}
                           </Link>
                           {hasSubcats && (
                             <button
                               onClick={() => setExpandedCategory(isExpanded ? null : item.name)}
                               className="p-2 text-muted-foreground hover:text-foreground"
-                              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
+                              aria-label={isExpanded ? L(`${item.ko ?? item.name} 접기`, `Collapse ${item.name}`) : L(`${item.ko ?? item.name} 펼치기`, `Expand ${item.name}`)}
                               aria-expanded={isExpanded}
                             >
                               <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
@@ -126,7 +129,7 @@ export function Header({ categories = [] }: HeaderProps) {
                                 className="py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                                 onClick={() => setMobileMenuOpen(false)}
                               >
-                                {sub.name}
+                                {catName(L, sub)}
                               </Link>
                             ))}
                           </div>
@@ -154,7 +157,7 @@ export function Header({ categories = [] }: HeaderProps) {
               href={item.href}
               className="text-sm font-medium text-foreground transition-colors hover:text-foreground/70"
             >
-              {item.name}
+              {L(item.ko ?? item.name, item.name)}
             </Link>
           ))}
         </nav>
@@ -195,13 +198,13 @@ export function Header({ categories = [] }: HeaderProps) {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/account")}>
-                  {tCommon("signIn")}
+                  {L("내 계정", "My Account")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/account/orders")}>
-                  {tCommon("orders")}
+                  {L("주문 내역", "Orders")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/account/settings")}>
-                  Settings
+                  {L("설정", "Settings")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { logout(); router.push("/") }}>
@@ -232,7 +235,7 @@ export function Header({ categories = [] }: HeaderProps) {
                 className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-background"
                 aria-live="polite"
                 aria-atomic="true"
-                aria-label={`${itemCount} ${itemCount === 1 ? "item" : "items"} in cart`}
+                aria-label={L(`장바구니에 ${itemCount}개`, `${itemCount} ${itemCount === 1 ? "item" : "items"} in cart`)}
               >
                 {itemCount > 9 ? "9+" : itemCount}
               </span>

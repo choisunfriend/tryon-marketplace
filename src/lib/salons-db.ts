@@ -1,4 +1,5 @@
 import type { D1Database } from "@/lib/products-db"
+import { bi, loc } from "@/i18n/l"
 
 // ============================================================================
 // (2026-11-01) 미용실 지도 — salons · salon_styles (migrations/0003_salons.sql)
@@ -54,7 +55,7 @@ function str(v: unknown, max: number): string | null {
   if (v === undefined || v === null) return null
   const s = String(v).trim()
   if (!s) return null
-  if (s.length > max) throw new Error(`글자 수가 너무 깁니다 (최대 ${max}자)`)
+  if (s.length > max) throw new Error(bi(`글자 수가 너무 깁니다 (최대 ${max}자)`, `Text is too long (max ${max} characters)`))
   return s
 }
 
@@ -69,7 +70,7 @@ export function safeUrl(v: unknown, label: string): string | null {
   } catch {
     /* 아래에서 오류 */
   }
-  throw new Error(`${label} 은(는) https:// 주소여야 합니다`)
+  throw new Error(bi(`${loc(label, "ko")} 은(는) https:// 주소여야 합니다`, `${loc(label, "en")} must be an https:// address`))
 }
 
 export interface SalonInput {
@@ -90,30 +91,30 @@ export function parseSalonInput(body: Record<string, unknown>, creating: boolean
   const out: SalonInput = {}
   if (creating || "name" in body) {
     const n = str(body.name, 80)
-    if (!n) throw new Error("미용실 이름을 넣어 주세요")
+    if (!n) throw new Error(bi("미용실 이름을 넣어 주세요", "Please enter the salon name"))
     out.name = n
   }
   if (creating || "lat" in body || "lng" in body) {
     const lat = Number(body.lat)
     const lng = Number(body.lng)
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) throw new Error("위도(lat)가 올바르지 않습니다 — 지도에서 위치를 찍어 주세요")
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180) throw new Error("경도(lng)가 올바르지 않습니다 — 지도에서 위치를 찍어 주세요")
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) throw new Error(bi("위도(lat)가 올바르지 않습니다 — 지도에서 위치를 찍어 주세요", "Latitude (lat) is invalid — pick the location on the map"))
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) throw new Error(bi("경도(lng)가 올바르지 않습니다 — 지도에서 위치를 찍어 주세요", "Longitude (lng) is invalid — pick the location on the map"))
     out.lat = Math.round(lat * 1e6) / 1e6
     out.lng = Math.round(lng * 1e6) / 1e6
   }
   if ("address" in body) out.address = str(body.address, 200)
   if ("country" in body) {
     const c = str(body.country, 2)?.toUpperCase() ?? null
-    if (c && !/^[A-Z]{2}$/.test(c)) throw new Error("나라 코드는 영문 2자 (KR, US …)")
+    if (c && !/^[A-Z]{2}$/.test(c)) throw new Error(bi("나라 코드는 영문 2자 (KR, US …)", "Country code must be 2 letters (KR, US …)"))
     out.country = c
   }
   if ("phone" in body) out.phone = str(body.phone, 40)
   if ("hours" in body) out.hours = str(body.hours, 200)
-  if ("booking_url" in body) out.booking_url = safeUrl(body.booking_url, "예약 링크")
+  if ("booking_url" in body) out.booking_url = safeUrl(body.booking_url, bi("예약 링크", "Booking link"))
   if ("description" in body) out.description = str(body.description, 1000)
-  if ("cover_url" in body) out.cover_url = safeUrl(body.cover_url, "대표 사진")
+  if ("cover_url" in body) out.cover_url = safeUrl(body.cover_url, bi("대표 사진", "Cover photo"))
   if ("status" in body) {
-    if (body.status !== "active" && body.status !== "hidden") throw new Error("status 는 active | hidden")
+    if (body.status !== "active" && body.status !== "hidden") throw new Error(bi("status 는 active | hidden", "status must be active | hidden"))
     out.status = body.status
   }
   return out
@@ -131,33 +132,33 @@ const BAD_KEYS = new Set(["__proto__", "prototype", "constructor"])
 const B64_RE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
 function cleanValue(v: unknown, depth: number, path = ""): unknown {
-  if (depth > SPEC_MAX_DEPTH) throw new Error("스펙이 너무 깊게 중첩되어 있습니다")
+  if (depth > SPEC_MAX_DEPTH) throw new Error(bi("스펙이 너무 깊게 중첩되어 있습니다", "The spec is nested too deeply"))
   if (v === null || typeof v === "boolean") return v
 
   if (typeof v === "number") {
-    if (!Number.isFinite(v)) throw new Error("스펙에 숫자가 아닌 값(NaN·Infinity)이 있습니다")
+    if (!Number.isFinite(v)) throw new Error(bi("스펙에 숫자가 아닌 값(NaN·Infinity)이 있습니다", "The spec has a non-numeric value (NaN/Infinity)"))
     return v
   }
 
   if (typeof v === "string") {
   if (path === "flow.d" || path === "readpaths.d") {
     if (v.length > 400000) {
-      throw new Error(`${path}가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`)
+      throw new Error(bi(`${path}가 너무 깁니다 (최대 260000자, 현재 ${v.length}자)`, `${path} is too long (max 260000 characters, now ${v.length})`))
     }
     if (!B64_RE.test(v)) {
-      throw new Error(`${path}가 Base64 형식이 아닙니다 (길이: ${v.length})`)
+      throw new Error(bi(`${path}가 Base64 형식이 아닙니다 (길이: ${v.length})`, `${path} is not Base64 (length: ${v.length})`))
     }
     return v
   }
 
   if (v.length > 400000) {
-     throw new Error(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path},현재 ${v.length}자)`)
+     throw new Error(bi(`스펙 안의 글자가 너무 깁니다 (최대 1000자, 경로: ${path},현재 ${v.length}자)`, `Text in the spec is too long (max 1000 characters, path: ${path}, now ${v.length})`))
   }
   return v
 }
 
   if (Array.isArray(v)) {
-    if (v.length > 20000) throw new Error("스펙 안의 목록이 너무 깁니다")
+    if (v.length > 20000) throw new Error(bi("스펙 안의 목록이 너무 깁니다", "A list in the spec is too long"))
     return v.map((x) => cleanValue(x, depth + 1, `${path}[]`))
   }
 
@@ -165,14 +166,14 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
     const out: Record<string, unknown> = {}
     for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
       if (BAD_KEYS.has(k) || !/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k)) {
-        throw new Error(`스펙에 쓸 수 없는 키: ${k}`)
+        throw new Error(bi(`스펙에 쓸 수 없는 키: ${k}`, `Key not allowed in the spec: ${k}`))
       }
       out[k] = cleanValue(x, depth + 1, path ? `${path}.${k}` : k)
     }
     return out
   }
 
-  throw new Error(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`)
+  throw new Error(bi(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`, `The spec can only contain JSON data (path: ${path || "(root)"}, type: ${typeof v})`))
 }
 // (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
 //   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
@@ -192,10 +193,10 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
     try {
       v = JSON.parse(v)
     } catch {
-      throw new Error("스펙이 올바른 JSON 이 아닙니다")
+      throw new Error(bi("스펙이 올바른 JSON 이 아닙니다", "The spec is not valid JSON"))
     }
   }
-  if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("스펙은 { … } 객체여야 합니다")
+  if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error(bi("스펙은 { … } 객체여야 합니다", "The spec must be an { … } object"))
   let groom: Record<string, unknown> | undefined
   if ("groom" in (v as object)) {
     groom = cleanGroom((v as Record<string, unknown>).groom)
@@ -204,18 +205,18 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
   }
   const spec = cleanValue(v, 0) as Record<string, unknown>
   if (!spec.cut || typeof spec.cut !== "object" || Array.isArray(spec.cut)) {
-    throw new Error("스펙에 cut(구역별 커트) 이 있어야 합니다")
+    throw new Error(bi("스펙에 cut(구역별 커트) 이 있어야 합니다", "The spec must include cut (per-section cuts)"))
   }
   if (spec.color !== undefined && !(typeof spec.color === "string" && /^#[0-9A-Fa-f]{6}$/.test(spec.color))) {
-    throw new Error("color 는 #RRGGBB 형식이어야 합니다")
+    throw new Error(bi("color 는 #RRGGBB 형식이어야 합니다", "color must be #RRGGBB"))
   }
   // (2026-11-01) GYEOL 앱의 「미용실에 올리기」로 만든 스펙만 받음 (앱에서만 스타일을 만들게)
   //   ⚠ 앱이 붙이는 표시일 뿐 서명이 아니라, 마음먹고 흉내 내면 막을 수는 없음 — 관리자 화면에 입력칸을 없애 길을 막는 것
   const mark = spec.gyeol as Record<string, unknown> | undefined
   if (!mark || typeof mark !== "object" || mark.app !== "gyeol") {
-    throw new Error("헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 등록할 수 있어요")
+    throw new Error(bi("헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 등록할 수 있어요", "Hairstyles can only be added with “Post to salon” in the GYEOL app"))
   }
-  if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error("스펙이 너무 큽니다 (512KB 이하)")
+  if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error(bi("스펙이 너무 큽니다 (512KB 이하)", "The spec is too large (512KB max)"))
   if (groom) spec.groom = groom
   return spec
 }
@@ -236,32 +237,32 @@ export function parseStyleInput(body: Record<string, unknown>, creating: boolean
   const out: StyleInput = {}
   if (creating || "name" in body) {
     const n = str(body.name, 80)
-    if (!n) throw new Error("스타일 이름을 넣어 주세요")
+    if (!n) throw new Error(bi("스타일 이름을 넣어 주세요", "Please enter the style name"))
     out.name = n
   }
   if ("gender" in body) {
-    if (!["male", "female", "both"].includes(String(body.gender))) throw new Error("gender 는 male | female | both")
+    if (!["male", "female", "both"].includes(String(body.gender))) throw new Error(bi("gender 는 male | female | both", "gender must be male | female | both"))
     out.gender = body.gender as StyleGender
   }
   const optInt = (k: string, max: number, label: string) => {
     const v = body[k]
     if (v === null || v === "" || v === undefined) return null
     const n = Number(v)
-    if (!Number.isInteger(n) || n < 0 || n > max) throw new Error(`${label} 값이 올바르지 않습니다`)
+    if (!Number.isInteger(n) || n < 0 || n > max) throw new Error(bi(`${loc(label, "ko")} 값이 올바르지 않습니다`, `${loc(label, "en")} is invalid`))
     return n
   }
-  if ("price_minor" in body) out.price_minor = optInt("price_minor", 1e10, "가격")
-  if ("duration_min" in body) out.duration_min = optInt("duration_min", 24 * 60, "소요 시간")
-  if ("sort" in body) out.sort = optInt("sort", 9999, "순서") ?? 0
+  if ("price_minor" in body) out.price_minor = optInt("price_minor", 1e10, bi("가격", "Price"))
+  if ("duration_min" in body) out.duration_min = optInt("duration_min", 24 * 60, bi("소요 시간", "Duration"))
+  if ("sort" in body) out.sort = optInt("sort", 9999, bi("순서", "Order")) ?? 0
   if ("currency" in body) {
     const c = str(body.currency, 3)?.toUpperCase() ?? null
-    if (c && !/^[A-Z]{3}$/.test(c)) throw new Error("통화는 영문 3자 (KRW, USD …)")
+    if (c && !/^[A-Z]{3}$/.test(c)) throw new Error(bi("통화는 영문 3자 (KRW, USD …)", "Currency must be 3 letters (KRW, USD …)"))
     out.currency = c
   }
-  if ("thumbnail_url" in body) out.thumbnail_url = safeUrl(body.thumbnail_url, "썸네일")
+  if ("thumbnail_url" in body) out.thumbnail_url = safeUrl(body.thumbnail_url, bi("썸네일", "Thumbnail"))
   if (creating || "spec" in body) out.spec = JSON.stringify(cleanSpec(body.spec))
   if ("status" in body) {
-    if (body.status !== "active" && body.status !== "hidden") throw new Error("status 는 active | hidden")
+    if (body.status !== "active" && body.status !== "hidden") throw new Error(bi("status 는 active | hidden", "status must be active | hidden"))
     out.status = body.status
   }
   return out
@@ -404,7 +405,7 @@ async function updateRow(db: D1Database, table: "salons" | "salon_styles", id: s
     sets.push(`${k} = ?`) // 키는 parse*Input 이 만든 고정 목록에서만 옴
     vals.push(v)
   }
-  if (!sets.length) throw new Error("바꿀 값이 없습니다")
+  if (!sets.length) throw new Error(bi("바꿀 값이 없습니다", "Nothing to update"))
   sets.push("updated_at = ?")
   vals.push(new Date().toISOString())
   const r = await db.prepare(`UPDATE ${table} SET ${sets.join(", ")} WHERE id = ?`).bind(...vals, id).run()

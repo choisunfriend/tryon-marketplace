@@ -1,4 +1,5 @@
 import type { PayoutProvider } from "./types"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 토스페이먼츠 지급대행 (한국 판매자 · KRW)
@@ -15,11 +16,11 @@ import type { PayoutProvider } from "./types"
 
 export const tossProvider: PayoutProvider = {
   id: "toss",
-  label: "토스페이먼츠 지급대행",
+  label: bi("토스페이먼츠 지급대행", "Toss Payments payouts"),
   isConfigured: () => !!process.env.TOSS_PAYOUT_SECRET_KEY && process.env.TOSS_PAYOUT_ENABLED === "1",
   supports: (country, currency) => country === "KR" && currency === "KRW",
   async send() {
     // TODO(토스 연동): 실제 API 호출. isConfigured() 가 false 인 동안은 여기 오지 않음(수동으로 대신 처리).
-    return { status: "failed", error: "토스 지급대행 연동 전입니다" }
+    return { status: "failed", error: bi("토스 지급대행 연동 전입니다", "Toss payouts are not connected yet") }
   },
 }

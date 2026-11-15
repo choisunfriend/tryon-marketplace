@@ -2,12 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronDown } from "lucide-react"
+import { useL } from "@/i18n/use-l"
 
 const sortOptions = [
-  { value: "newest", label: "Newest" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
-  { value: "name", label: "Name: A-Z" },
+  { value: "newest", label: "Newest", ko: "최신순" },
+  { value: "price-asc", label: "Price: Low to High", ko: "가격 낮은 순" },
+  { value: "price-desc", label: "Price: High to Low", ko: "가격 높은 순" },
+  { value: "name", label: "Name: A-Z", ko: "이름순" },
 ]
 
 interface SortDropdownProps {
@@ -15,6 +16,7 @@ interface SortDropdownProps {
 }
 
 export function SortDropdown({ currentSort }: SortDropdownProps) {
+  const { L } = useL()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -36,12 +38,12 @@ export function SortDropdown({ currentSort }: SortDropdownProps) {
       <select
         value={currentSort}
         onChange={handleChange}
-        aria-label="Sort products by"
+        aria-label={L("상품 정렬", "Sort products by")}
         className="appearance-none rounded-md border border-border bg-white py-2 pl-3 pr-8 text-sm text-foreground outline-none focus:border-foreground focus:ring-1 focus:ring-foreground"
       >
         {sortOptions.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {L(option.ko, option.label)}
           </option>
         ))}
       </select>

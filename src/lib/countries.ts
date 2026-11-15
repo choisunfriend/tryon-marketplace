@@ -6,6 +6,8 @@
 //   payoutProvider 기본 정산 업체 (src/lib/payouts)
 // ============================================================================
 
+import { bi } from "@/i18n/l"
+
 export type PayoutProviderId = "manual" | "toss" | "payoneer"
 
 export interface CountryConfig {
@@ -17,7 +19,7 @@ export interface CountryConfig {
 }
 
 export const COUNTRIES: Record<string, CountryConfig> = {
-  KR: { code: "KR", name: "대한민국", currency: "KRW", minorDigits: 0, payoutProvider: "toss" },
+  KR: { code: "KR", name: bi("대한민국", "South Korea"), currency: "KRW", minorDigits: 0, payoutProvider: "toss" },
   US: { code: "US", name: "United States", currency: "USD", minorDigits: 2, payoutProvider: "payoneer" },
 }
 

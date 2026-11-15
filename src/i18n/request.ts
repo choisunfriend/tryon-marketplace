@@ -1,8 +1,8 @@
 import { getRequestConfig } from "next-intl/server"
-import { defaultLocale } from "./config"
+import { getLang } from "./server"
 
 export default getRequestConfig(async () => {
-  const locale = defaultLocale
+  const locale = await getLang()
 
   return {
     locale,

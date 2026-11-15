@@ -11,12 +11,14 @@ import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { useWishlistStore } from "@/store/wishlist"
 import { toast } from "sonner"
 import type { Product } from "@/types"
+import { useL } from "@/i18n/use-l"
 
 interface ProductCardProps {
   product: Product
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { L } = useL()
   const defaultVariant = product.variants[0]
   if (!defaultVariant) return null
 
@@ -38,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation()
     if (isWishlisted) {
       removeItem(product.id)
-      toast("Removed from wishlist")
+      toast(L("찜 목록에서 뺐어요", "Removed from wishlist"))
     } else {
       addItem({
         productId: product.id,
@@ -47,7 +49,7 @@ export function ProductCard({ product }: ProductCardProps) {
         price,
         image: image ?? { url: PLACEHOLDER_IMAGE, alt: product.name },
       })
-      toast.success("Added to wishlist")
+      toast.success(L("찜 목록에 담았어요", "Added to wishlist"))
     }
   }
 
@@ -66,13 +68,13 @@ export function ProductCard({ product }: ProductCardProps) {
             variant="secondary"
             className="absolute top-3 left-3 bg-white text-xs"
           >
-            Sale
+            {L("세일", "Sale")}
           </Badge>
         )}
         <button
           onClick={handleWishlist}
           className="absolute top-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm transition-opacity hover:bg-neutral-50 sm:opacity-0 sm:group-hover:opacity-100"
-          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          aria-label={isWishlisted ? L("찜 해제", "Remove from wishlist") : L("찜하기", "Add to wishlist")}
         >
           <Heart
             className={`h-4 w-4 ${isWishlisted ? "fill-current text-wishlist" : "text-neutral-600"}`}

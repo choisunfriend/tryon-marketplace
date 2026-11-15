@@ -7,11 +7,13 @@ export const siteConfig = {
   // Branding
   name: "Next.js Ecommerce Starter",
   tagline: "A free, open-source Next.js ecommerce template.",
+  taglineKo: "무료 오픈소스 Next.js 쇼핑몰 템플릿.",
   description:
     "A free, production-ready Next.js ecommerce starter template built with Tailwind CSS and shadcn/ui. Responsive, accessible, SEO optimized, and ready to connect to any checkout system. Built by Epic Design Labs.",
 
   // Announcement bar (set to "" to hide)
   announcement: "Free shipping on all orders over $75 — Shop now!",
+  announcementKo: "$75 이상 주문 시 전 상품 무료 배송 — 지금 쇼핑하세요!",
 
   // URLs
   url: process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000",

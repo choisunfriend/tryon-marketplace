@@ -1,5 +1,6 @@
 import { countryOf } from "@/lib/countries"
 import type { D1Database } from "@/lib/products-db"
+import { bi } from "@/i18n/l"
 import { hashPassword, type AdminRole } from "@/lib/security"
 
 // ============================================================================
@@ -90,9 +91,9 @@ export async function createStoreWithOwner(
   const country = countryOf(input.country) ?? countryOf("KR")!
 
   if (await db.prepare(`SELECT 1 FROM stores WHERE slug = ?`).bind(input.slug).first()) {
-    throw new Error("이미 쓰는 slug 입니다")
+    throw new Error(bi("이미 쓰는 slug 입니다", "That slug is already in use"))
   }
-  if (await findUserByEmail(db, input.ownerEmail)) throw new Error("이미 가입된 이메일입니다")
+  if (await findUserByEmail(db, input.ownerEmail)) throw new Error(bi("이미 가입된 이메일입니다", "That email is already registered"))
 
   await db
     .prepare(
@@ -131,7 +132,7 @@ export async function updateStore(
   // 운영자가 직접 영업 시작시키면 심사도 승인으로 봄
   if (input.status === "active") add("review_status", "approved")
   if (input.commission_rate !== undefined) add("commission_rate", input.commission_rate)
-  if (!sets.length) throw new Error("바꿀 값이 없습니다")
+  if (!sets.length) throw new Error(bi("바꿀 값이 없습니다", "Nothing to update"))
   sets.push("updated_at = ?")
   vals.push(new Date().toISOString())
   const r = await db.prepare(`UPDATE stores SET ${sets.join(", ")} WHERE id = ?`).bind(...vals, id).run()
@@ -144,7 +145,7 @@ export async function addStoreUser(
   db: D1Database,
   input: { storeId: string; email: string; password: string; role: "owner" | "staff" }
 ) {
-  if (await findUserByEmail(db, input.email)) throw new Error("이미 가입된 이메일입니다")
+  if (await findUserByEmail(db, input.email)) throw new Error(bi("이미 가입된 이메일입니다", "That email is already registered"))
   const id = crypto.randomUUID()
   await db
     .prepare(`INSERT INTO store_users (id, store_id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
@@ -170,9 +171,9 @@ export interface Application {
 
 export async function createApplication(db: D1Database, a: Application) {
   const country = countryOf(a.country)
-  if (!country) throw new Error("지원하지 않는 나라입니다")
-  if (await db.prepare(`SELECT 1 FROM stores WHERE slug = ?`).bind(a.slug).first()) throw new Error("이미 쓰는 주소(slug)입니다")
-  if (await findUserByEmail(db, a.email)) throw new Error("이미 가입된 이메일입니다")
+  if (!country) throw new Error(bi("지원하지 않는 나라입니다", "That country isn't supported"))
+  if (await db.prepare(`SELECT 1 FROM stores WHERE slug = ?`).bind(a.slug).first()) throw new Error(bi("이미 쓰는 주소(slug)입니다", "That address (slug) is already in use"))
+  if (await findUserByEmail(db, a.email)) throw new Error(bi("이미 가입된 이메일입니다", "That email is already registered"))
 
   const now = new Date().toISOString()
   const storeId = crypto.randomUUID()

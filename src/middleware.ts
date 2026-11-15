@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { ADMIN_COOKIE, appOrigins, verifyAdminSession } from "@/lib/security"
 import { mapOrigins } from "@/lib/map"
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, LOCALE_HEADER, normalizeLocale, type Locale } from "@/i18n/config"
 
 // ============================================================================
 // 마켓플레이스 접근 규칙 (2026-10-17 보안 1차)
@@ -80,11 +81,36 @@ function securityHeaders(response: NextResponse, admin: boolean, turnstile = fal
   return response
 }
 
+// (2026-11-14) ?lang=ko|en — 이번 요청은 그 언어로 그리고(요청 헤더), 쿠키로 기억해 다음 화면도 같게.
+// 앱 iframe 안(제3자)에서도 남도록 SameSite=None; Secure; Partitioned.
+function langOf(request: NextRequest): Locale | null {
+  return normalizeLocale(request.nextUrl.searchParams.get("lang"))
+}
+function nextWithLang(request: NextRequest, lang: Locale | null): NextResponse {
+  if (!lang) return NextResponse.next()
+  const h = new Headers(request.headers)
+  h.set(LOCALE_HEADER, lang)
+  return NextResponse.next({ request: { headers: h } })
+}
+function rememberLang(res: NextResponse, lang: Locale | null): NextResponse {
+  if (!lang) return res
+  res.headers.append(
+    "Set-Cookie",
+    `${LOCALE_COOKIE}=${lang}; Path=/; Max-Age=${LOCALE_COOKIE_MAX_AGE}; SameSite=None; Secure; Partitioned`
+  )
+  return res
+}
+
 export async function middleware(request: NextRequest) {
+  const lang = langOf(request)
+  return rememberLang(await route(request, lang), lang)
+}
+
+async function route(request: NextRequest, lang: Locale | null): Promise<NextResponse> {
   const path = request.nextUrl.pathname
   const admin = isAdminPath(path)
 
-  if (isSellerPath(path)) return securityHeaders(NextResponse.next(), true, true)
+  if (isSellerPath(path)) return securityHeaders(nextWithLang(request, lang), true, true)
 
   if (admin) {
     if (path !== "/admin-login") {
@@ -102,14 +128,14 @@ export async function middleware(request: NextRequest) {
         return securityHeaders(NextResponse.redirect(url), true)
       }
     }
-    return securityHeaders(NextResponse.next(), true)
+    return securityHeaders(nextWithLang(request, lang), true)
   }
 
   // 매장 화면: 최상위 창으로 직접 여는 것은 막고, iframe(앱 안)·페이지 안 요청은 통과
   const dest = request.headers.get("sec-fetch-dest")
   if (dest === "document") return securityHeaders(blockedPage(), false)
 
-  return securityHeaders(NextResponse.next(), false)
+  return securityHeaders(nextWithLang(request, lang), false)
 }
 
 export const config = {

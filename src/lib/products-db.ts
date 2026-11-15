@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 상품 D1 직접 읽기·쓰기 (관리자 전용) — wrangler.jsonc 의 DB 바인딩
@@ -48,7 +49,7 @@ interface ColumnInfo {
 async function columnsOf(db: D1Database): Promise<ColumnInfo[]> {
   const r = await db.prepare(`PRAGMA table_info(${PRODUCTS_TABLE})`).all<ColumnInfo>()
   const cols = r.results ?? []
-  if (!cols.length) throw new Error(`D1 에 ${PRODUCTS_TABLE} 테이블이 없습니다`)
+  if (!cols.length) throw new Error(bi(`D1 에 ${PRODUCTS_TABLE} 테이블이 없습니다`, `D1 has no ${PRODUCTS_TABLE} table`))
   return cols
 }
 
@@ -94,7 +95,7 @@ function pickWritable(
 }
 
 function quote(name: string): string {
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`이상한 컬럼 이름: ${name}`)
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(bi(`이상한 컬럼 이름: ${name}`, `Invalid column name: ${name}`))
   return `"${name}"`
 }
 
@@ -107,7 +108,7 @@ export async function listProducts(db: D1Database, storeId?: string | null) {
       ? "created_at DESC"
       : "rowid DESC"
   const hasStore = cols.some((c) => c.name === "store_id")
-  if (storeId && !hasStore) throw new Error("products.store_id 컬럼이 없습니다 — migrations/0001_multi_store.sql 을 실행하세요")
+  if (storeId && !hasStore) throw new Error(bi("products.store_id 컬럼이 없습니다 — migrations/0001_multi_store.sql 을 실행하세요", "products.store_id column is missing — run migrations/0001_multi_store.sql"))
   const r = storeId
     ? await db.prepare(`SELECT * FROM ${PRODUCTS_TABLE} WHERE store_id = ? ORDER BY ${order}`).bind(storeId).all()
     : await db.prepare(`SELECT * FROM ${PRODUCTS_TABLE} ORDER BY ${order}`).all()
@@ -130,7 +131,7 @@ export async function createProduct(db: D1Database, input: Record<string, unknow
   if (cols.some((c) => c.name === "updated_at")) data.updated_at = now
 
   const [names, values] = pickWritable(cols, data, textId ? [] : ["id"])
-  if (!names.length) throw new Error("저장할 값이 없습니다")
+  if (!names.length) throw new Error(bi("저장할 값이 없습니다", "Nothing to save"))
   const sql = `INSERT INTO ${PRODUCTS_TABLE} (${names.map(quote).join(", ")}) VALUES (${names.map(() => "?").join(", ")})`
   const r = await db.prepare(sql).bind(...values).run()
   const id = textId ? String(data.id) : String(r.meta?.last_row_id ?? "")
@@ -142,7 +143,7 @@ export async function updateProduct(db: D1Database, id: string, input: Record<st
   const data: Record<string, unknown> = { ...input }
   if (cols.some((c) => c.name === "updated_at")) data.updated_at = new Date().toISOString()
   const [names, values] = pickWritable(cols, data, ["id", "created_at"])
-  if (!names.length) throw new Error("바꿀 값이 없습니다")
+  if (!names.length) throw new Error(bi("바꿀 값이 없습니다", "Nothing to update"))
   const sql = `UPDATE ${PRODUCTS_TABLE} SET ${names.map((n) => `${quote(n)} = ?`).join(", ")} WHERE id = ?`
   const r = await db.prepare(sql).bind(...values, id).run()
   if (!r.meta?.changes) return null

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 import { siteConfig } from "@/lib/config"
+import { useL } from "@/i18n/use-l"
 
 function IconTwitter({ className }: { className?: string }) {
   return (
@@ -44,26 +45,27 @@ function IconTikTok({ className }: { className?: string }) {
 
 const footerLinks = {
   shop: [
-    { name: "All Products", href: "/shop" },
-    { name: "All Brands", href: "/brands" },
-    { name: "New Arrivals", href: "/shop?sort=newest" },
-    { name: "Sale", href: "/shop?sale=true" },
+    { name: "All Products", ko: "전체 상품", href: "/shop" },
+    { name: "All Brands", ko: "전체 브랜드", href: "/brands" },
+    { name: "New Arrivals", ko: "신상품", href: "/shop?sort=newest" },
+    { name: "Sale", ko: "세일", href: "/shop?sale=true" },
   ],
   company: [
-    { name: "About", href: "/about" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
-    { name: "FAQ", href: "/faq" },
+    { name: "About", ko: "소개", href: "/about" },
+    { name: "Blog", ko: "블로그", href: "/blog" },
+    { name: "Contact", ko: "문의", href: "/contact" },
+    { name: "FAQ", ko: "자주 묻는 질문", href: "/faq" },
   ],
   legal: [
-    { name: "Shipping Policy", href: "/policies/shipping" },
-    { name: "Returns & Refunds", href: "/policies/returns" },
-    { name: "Privacy Policy", href: "/policies/privacy" },
-    { name: "Terms of Service", href: "/policies/terms" },
+    { name: "Shipping Policy", ko: "배송 정책", href: "/policies/shipping" },
+    { name: "Returns & Refunds", ko: "반품·환불", href: "/policies/returns" },
+    { name: "Privacy Policy", ko: "개인정보 처리방침", href: "/policies/privacy" },
+    { name: "Terms of Service", ko: "이용약관", href: "/policies/terms" },
   ],
 }
 
 export function Footer() {
+  const { L } = useL()
   return (
     <footer className="border-t bg-white">
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-8">
@@ -74,13 +76,13 @@ export function Footer() {
               {siteConfig.name}
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
-              {siteConfig.tagline}
+              {L(siteConfig.taglineKo, siteConfig.tagline)}
             </p>
           </div>
 
           {/* Shop */}
           <div>
-            <h3 className="text-sm font-semibold">Shop</h3>
+            <h3 className="text-sm font-semibold">{L("쇼핑", "Shop")}</h3>
             <ul className="mt-4 space-y-2">
               {footerLinks.shop.map((link) => (
                 <li key={link.name}>
@@ -88,7 +90,7 @@ export function Footer() {
                     href={link.href}
                     className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {link.name}
+                    {L(link.ko, link.name)}
                   </Link>
                 </li>
               ))}
@@ -97,7 +99,7 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="text-sm font-semibold">Company</h3>
+            <h3 className="text-sm font-semibold">{L("회사", "Company")}</h3>
             <ul className="mt-4 space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
@@ -105,7 +107,7 @@ export function Footer() {
                     href={link.href}
                     className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {link.name}
+                    {L(link.ko, link.name)}
                   </Link>
                 </li>
               ))}
@@ -114,7 +116,7 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-sm font-semibold">Legal</h3>
+            <h3 className="text-sm font-semibold">{L("약관", "Legal")}</h3>
             <ul className="mt-4 space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
@@ -122,7 +124,7 @@ export function Footer() {
                     href={link.href}
                     className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {link.name}
+                    {L(link.ko, link.name)}
                   </Link>
                 </li>
               ))}
@@ -134,9 +136,9 @@ export function Footer() {
 
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            &copy; {siteConfig.copyrightYear} {siteConfig.name}. All rights reserved.
+            &copy; {siteConfig.copyrightYear} {siteConfig.name}. {L("모든 권리 보유.", "All rights reserved.")}
             <br className="sm:hidden" />
-            {" "}Design by{" "}
+            {" "}{L("디자인", "Design by")}{" "}
             <a
               href="https://epicdesignlabs.com"
               target="_blank"

@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { ArrowUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useL } from "@/i18n/use-l"
 
 export function BackToTop() {
+  const { L } = useL()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export function BackToTop() {
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-4 opacity-0"
       )}
-      aria-label="Back to top"
+      aria-label={L("맨 위로", "Back to top")}
     >
       <ArrowUp className="h-4 w-4" />
     </button>

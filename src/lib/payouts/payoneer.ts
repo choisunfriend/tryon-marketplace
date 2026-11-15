@@ -1,4 +1,5 @@
 import type { PayoutProvider } from "./types"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // 페이오니아 Mass Payouts (해외 판매자 · USD 등)
@@ -24,6 +25,6 @@ export const payoneerProvider: PayoutProvider = {
   },
   async send() {
     // TODO(페이오니아 연동): 실제 API 호출. isConfigured() 가 false 인 동안은 여기 오지 않음.
-    return { status: "failed", error: "페이오니아 연동 전입니다" }
+    return { status: "failed", error: bi("페이오니아 연동 전입니다", "Payoneer is not connected yet") }
   },
 }

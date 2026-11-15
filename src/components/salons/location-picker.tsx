@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react"
 import type { Map as MlMap, Marker } from "maplibre-gl"
 import { MAP_STYLE_URL } from "@/lib/map"
 import { browserMapView, localizeMapLabels } from "@/lib/browser-locale"
+import { currentLang, useL } from "@/i18n/client"
 
 // (2026-11-01) 관리자용 위치 고르기 — 지도를 누르거나 핀을 끌어 위도·경도를 정함
 export function LocationPicker({
@@ -16,6 +17,7 @@ export function LocationPicker({
   lng: number | null
   onChange: (p: { lat: number; lng: number }) => void
 }) {
+  const { L } = useL()
   const boxRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
   const markerRef = useRef<Marker | null>(null)
@@ -38,7 +40,7 @@ export function LocationPicker({
         attributionControl: { compact: true },
       })
       mapRef.current = map
-      map.on("load", () => localizeMapLabels(map)) // 지명을 브라우저 언어로
+      map.on("load", () => localizeMapLabels(map, currentLang())) // 지명을 화면 언어로
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right")
       const marker = new maplibregl.Marker({ color: "#c98b52", draggable: true })
       markerRef.current = marker
@@ -70,5 +72,5 @@ export function LocationPicker({
     map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15) })
   }, [lat, lng])
 
-  return <div ref={boxRef} className="h-72 w-full overflow-hidden rounded-md border" aria-label="위치 고르기 지도" />
+  return <div ref={boxRef} className="h-72 w-full overflow-hidden rounded-md border" aria-label={L("위치 고르기 지도", "Location picker map")} />
 }

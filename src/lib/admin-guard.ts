@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { bi } from "@/i18n/l"
 import { folderOwner, getProductsDb, type D1Database } from "@/lib/products-db"
 import { folderHasStorePrefix, getAdminSession, isSameOriginWrite, type AdminSession } from "@/lib/security"
 
@@ -26,12 +27,12 @@ export async function requireAdmin(
   opts: { write?: boolean; platform?: boolean } = {}
 ): Promise<GuardOk | GuardErr> {
   const session = await getAdminSession(request)
-  if (!session) return { err: fail("관리자 로그인이 필요합니다", 401) }
-  if (opts.write && !isSameOriginWrite(request)) return { err: fail("허용되지 않은 요청 출처입니다", 403) }
-  if (opts.platform && session.role !== "platform") return { err: fail("플랫폼 운영자만 할 수 있습니다", 403) }
+  if (!session) return { err: fail(bi("관리자 로그인이 필요합니다", "Admin sign-in required"), 401) }
+  if (opts.write && !isSameOriginWrite(request)) return { err: fail(bi("허용되지 않은 요청 출처입니다", "Request origin not allowed"), 403) }
+  if (opts.platform && session.role !== "platform") return { err: fail(bi("플랫폼 운영자만 할 수 있습니다", "Only the platform operator can do this"), 403) }
 
   const db = await getProductsDb()
-  if (!db) return { err: fail("D1 바인딩(DB)이 없습니다 — wrangler.jsonc 의 d1_databases 를 확인하세요", 503) }
+  if (!db) return { err: fail(bi("D1 바인딩(DB)이 없습니다 — wrangler.jsonc 의 d1_databases 를 확인하세요", "No D1 binding (DB) — check d1_databases in wrangler.jsonc"), 503) }
 
   if (session.uid !== "env") {
     const row = await db
@@ -42,9 +43,9 @@ export async function requireAdmin(
       )
       .bind(session.uid)
       .first<{ disabled: number; status: string | null }>()
-    if (!row || row.disabled) return { err: fail("계정이 없거나 사용 중지되었습니다", 401) }
+    if (!row || row.disabled) return { err: fail(bi("계정이 없거나 사용 중지되었습니다", "The account doesn't exist or is disabled"), 401) }
     if (session.role !== "platform" && row.status !== "active") {
-      return { err: fail("입점사가 영업 중(active)이 아닙니다", 403) }
+      return { err: fail(bi("입점사가 영업 중(active)이 아닙니다", "The store is not active"), 403) }
     }
   }
   return { session, db }

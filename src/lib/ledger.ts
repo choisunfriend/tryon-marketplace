@@ -1,4 +1,5 @@
 import type { D1Database } from "@/lib/products-db"
+import { bi } from "@/i18n/l"
 import { activeProvider, type PayoutStore } from "@/lib/payouts"
 
 // ============================================================================
@@ -35,8 +36,8 @@ async function storeFinance(db: D1Database, storeId: string) {
 // 판매: +판매액, -수수료 (수수료율은 입점사 commission_rate)
 export async function recordSale(db: D1Database, i: { storeId: string; grossMinor: number; orderRef: string; memo?: string }) {
   const s = await storeFinance(db, i.storeId)
-  if (!s) throw new Error("입점사가 없습니다")
-  if (!Number.isInteger(i.grossMinor) || i.grossMinor <= 0) throw new Error("판매액은 0보다 커야 합니다")
+  if (!s) throw new Error(bi("입점사가 없습니다", "Store not found"))
+  if (!Number.isInteger(i.grossMinor) || i.grossMinor <= 0) throw new Error(bi("판매액은 0보다 커야 합니다", "Sale amount must be greater than 0"))
   const fee = Math.round(i.grossMinor * s.commission_rate)
   await insertEntry(db, { storeId: s.id, type: "sale", amountMinor: i.grossMinor, currency: s.currency, orderRef: i.orderRef, memo: i.memo })
   if (fee > 0) {
@@ -46,7 +47,7 @@ export async function recordSale(db: D1Database, i: { storeId: string; grossMino
       amountMinor: -fee,
       currency: s.currency,
       orderRef: i.orderRef,
-      memo: `수수료 ${(s.commission_rate * 100).toFixed(1)}%`,
+      memo: bi(`수수료 ${(s.commission_rate * 100).toFixed(1)}%`, `Commission ${(s.commission_rate * 100).toFixed(1)}%`),
     })
   }
 }
@@ -54,17 +55,17 @@ export async function recordSale(db: D1Database, i: { storeId: string; grossMino
 // 환불: -환불액, +돌려줄 수수료
 export async function recordRefund(db: D1Database, i: { storeId: string; refundMinor: number; orderRef: string; memo?: string }) {
   const s = await storeFinance(db, i.storeId)
-  if (!s) throw new Error("입점사가 없습니다")
-  if (!Number.isInteger(i.refundMinor) || i.refundMinor <= 0) throw new Error("환불액은 0보다 커야 합니다")
+  if (!s) throw new Error(bi("입점사가 없습니다", "Store not found"))
+  if (!Number.isInteger(i.refundMinor) || i.refundMinor <= 0) throw new Error(bi("환불액은 0보다 커야 합니다", "Refund amount must be greater than 0"))
   const fee = Math.round(i.refundMinor * s.commission_rate)
   await insertEntry(db, { storeId: s.id, type: "refund", amountMinor: -i.refundMinor, currency: s.currency, orderRef: i.orderRef, memo: i.memo })
-  if (fee > 0) await insertEntry(db, { storeId: s.id, type: "commission", amountMinor: fee, currency: s.currency, orderRef: i.orderRef, memo: "환불 수수료 반환" })
+  if (fee > 0) await insertEntry(db, { storeId: s.id, type: "commission", amountMinor: fee, currency: s.currency, orderRef: i.orderRef, memo: bi("환불 수수료 반환", "Commission returned on refund") })
 }
 
 export async function recordAdjustment(db: D1Database, i: { storeId: string; amountMinor: number; memo: string }) {
   const s = await storeFinance(db, i.storeId)
-  if (!s) throw new Error("입점사가 없습니다")
-  if (!Number.isInteger(i.amountMinor) || i.amountMinor === 0) throw new Error("조정액이 올바르지 않습니다")
+  if (!s) throw new Error(bi("입점사가 없습니다", "Store not found"))
+  if (!Number.isInteger(i.amountMinor) || i.amountMinor === 0) throw new Error(bi("조정액이 올바르지 않습니다", "Invalid adjustment amount"))
   await insertEntry(db, { storeId: s.id, type: "adjustment", amountMinor: i.amountMinor, currency: s.currency, memo: i.memo })
 }
 
@@ -135,7 +136,7 @@ export async function createPayout(db: D1Database, storeId: string) {
       payout_account: string | null
       status: string
     }>()
-  if (!s) throw new Error("입점사가 없습니다")
+  if (!s) throw new Error(bi("입점사가 없습니다", "Store not found"))
 
   const store: PayoutStore & { payout_provider: string | null } = { ...s, payout_account: parseJson(s.payout_account) }
   const provider = activeProvider(store)
@@ -153,7 +154,7 @@ export async function createPayout(db: D1Database, storeId: string) {
   const amount = sum?.total ?? 0
   if (amount <= 0) {
     await db.prepare(`UPDATE ledger_entries SET payout_id = NULL WHERE payout_id = ?`).bind(id).run()
-    throw new Error("지급할 잔액이 없습니다")
+    throw new Error(bi("지급할 잔액이 없습니다", "No balance to pay out"))
   }
 
   await db
@@ -186,7 +187,7 @@ export async function setPayoutStatus(
 ) {
   const cur = await db.prepare(`SELECT status FROM payouts WHERE id = ?`).bind(id).first<{ status: string }>()
   if (!cur) return false
-  if (cur.status === "paid" || cur.status === "failed") throw new Error("이미 끝난 지급입니다")
+  if (cur.status === "paid" || cur.status === "failed") throw new Error(bi("이미 끝난 지급입니다", "This payout is already finished"))
   await db
     .prepare(
       `UPDATE payouts SET status = ?, provider_ref = COALESCE(?, provider_ref), error = ?, updated_at = ? WHERE id = ?`

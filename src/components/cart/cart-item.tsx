@@ -10,12 +10,14 @@ import { formatPrice } from "@/lib/utils"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { useCartStore } from "@/store/cart"
 import type { CartItem as CartItemType } from "@/types"
+import { useL } from "@/i18n/use-l"
 
 interface CartItemProps {
   item: CartItemType
 }
 
 export function CartItem({ item }: CartItemProps) {
+  const { L } = useL()
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const removeItem = useCartStore((s) => s.removeItem)
   const [imgSrc, setImgSrc] = useState(item.image?.url || PLACEHOLDER_IMAGE)
@@ -61,7 +63,7 @@ export function CartItem({ item }: CartItemProps) {
             size="icon"
             className="h-6 w-6"
             onClick={() => removeItem(item.variantId)}
-            aria-label={`Remove ${item.name}`}
+            aria-label={L(`${item.name} 빼기`, `Remove ${item.name}`)}
           >
             <X className="h-3 w-3" />
           </Button>

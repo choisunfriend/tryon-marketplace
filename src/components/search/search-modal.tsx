@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/utils"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import type { Product } from "@/types"
 import data from "@/data/products.json"
+import { useL } from "@/i18n/use-l"
 
 // TODO: 검색 모달은 아직 예전 데모 JSON을 봅니다(Worker 상품 아님). 타입만 맞춰 빌드가 되게 함.
 const allProducts = data.products as unknown as Product[]
@@ -28,6 +29,7 @@ interface SearchModalProps {
 }
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const { L } = useL()
   const [query, setQuery] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -97,7 +99,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       />
 
       {/* Modal */}
-      <div ref={modalRef} className="relative mx-auto mt-[10vh] w-full max-w-2xl px-4" role="dialog" aria-modal="true" aria-label="Search products">
+      <div ref={modalRef} className="relative mx-auto mt-[10vh] w-full max-w-2xl px-4" role="dialog" aria-modal="true" aria-label={L("상품 검색", "Search products")}>
         <div className="overflow-hidden rounded-xl bg-white shadow-2xl">
           {/* Input */}
           <div className="flex items-center border-b px-4">
@@ -107,15 +109,15 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
-              aria-label="Search products"
+              placeholder={L("상품 검색...", "Search products...")}
+              aria-label={L("상품 검색", "Search products")}
               className="flex-1 border-0 bg-transparent px-4 py-4 text-lg outline-none placeholder:text-muted-foreground/60"
             />
             {hasQuery ? (
               <button
                 onClick={() => setQuery("")}
                 className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-                aria-label="Clear search"
+                aria-label={L("검색어 지우기", "Clear search")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -169,7 +171,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   onClick={handleClose}
                   className="mt-1 flex items-center justify-center gap-2 rounded-lg p-3 text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground"
                 >
-                  View all results
+                  {L("결과 전체 보기", "View all results")}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -178,7 +180,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             {hasQuery && results.length === 0 && (
               <div className="px-4 py-12 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No results for &quot;{query}&quot;
+                  {L(`"${query}"에 대한 결과가 없어요`, `No results for "${query}"`)}
                 </p>
               </div>
             )}
@@ -186,7 +188,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             {!hasQuery && (
               <div className="p-4">
                 <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Popular Searches
+                  {L("인기 검색어", "Popular Searches")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {popularSearches.map((term) => (

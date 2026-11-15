@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { BakePanel } from "@/components/admin/bake-panel"
+import { useL } from "@/i18n/client"
+import { bi } from "@/i18n/l"
 
 // ============================================================================
 // (2026-11-14) 3D 옷 업로드 칸 — OBJ 칸 · MTL 칸 따로 + 바로 옆 「3D 굽기」
@@ -33,7 +35,7 @@ async function uploadOne(file: File, folder: string): Promise<Uploaded> {
   body.append("folder", folder)
   const res = await fetch("/api/assets/upload", { method: "POST", body })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok || !data.success) throw new Error(`${file.name}: ${data.error ?? "업로드 실패"}`)
+  if (!res.ok || !data.success) throw new Error(`${file.name}: ${data.error ?? bi("업로드 실패", "Upload failed")}`)
   return { name: data.name, key: data.key, refs: Array.isArray(data.refs) ? data.refs : [], ext: extOf(data.name) }
 }
 
@@ -52,6 +54,7 @@ export function ModelUploadField({
   resetSignal: number
   initialValue?: string
 }) {
+  const { L, loc } = useL()
   const [value, setValue] = useState(initialValue)
   const [model, setModel] = useState<Uploaded | null>(null)
   const [mats, setMats] = useState<Uploaded[]>([]) // .mtl + 텍스처
@@ -89,27 +92,27 @@ export function ModelUploadField({
   const have = new Set(mats.map((f) => f.name.toLowerCase()))
   const warn: string[] = []
   for (const r of model?.refs ?? [])
-    if (!have.has(r.toLowerCase())) warn.push(`OBJ가 색 파일 ${r} 을(를) 찾습니다 — 오른쪽 MTL 칸에 올려 주세요`)
+    if (!have.has(r.toLowerCase())) warn.push(L(`OBJ가 색 파일 ${r} 을(를) 찾습니다 — 오른쪽 MTL 칸에 올려 주세요`, `The OBJ looks for color file ${r} — upload it in the MTL box on the right`))
   for (const m of mats)
     for (const r of m.refs)
-      if (!have.has(r.toLowerCase())) warn.push(`MTL이 텍스처 ${r} 을(를) 찾습니다 — MTL 칸에 이미지도 같이 올려 주세요`)
+      if (!have.has(r.toLowerCase())) warn.push(L(`MTL이 텍스처 ${r} 을(를) 찾습니다 — MTL 칸에 이미지도 같이 올려 주세요`, `The MTL looks for texture ${r} — upload the image in the MTL box too`))
 
   async function handleModel(list: FileList | null) {
     const file = list?.[0]
     if (!file || !folder) return
     if (!MODEL.includes(extOf(file.name))) {
-      setModelStatus("3D 파일은 .obj (또는 .glb/.gltf) 만 올릴 수 있습니다 — .mtl 은 오른쪽 칸에")
+      setModelStatus(L("3D 파일은 .obj (또는 .glb/.gltf) 만 올릴 수 있습니다 — .mtl 은 오른쪽 칸에", "Only .obj (or .glb/.gltf) here — put the .mtl in the box on the right"))
       return
     }
     setBusy(true)
     try {
-      setModelStatus(`업로드 중… ${file.name}`)
+      setModelStatus(L(`업로드 중… ${file.name}`, `Uploading… ${file.name}`))
       const up = await uploadOne(file, folder)
       setModel(up)
       setValue(up.key)
-      setModelStatus(`올림 · ${up.name}`)
+      setModelStatus(L(`올림 · ${up.name}`, `Uploaded · ${up.name}`))
     } catch (e) {
-      setModelStatus(e instanceof Error ? e.message : "업로드 실패")
+      setModelStatus(e instanceof Error ? loc(e.message) : L("업로드 실패", "Upload failed"))
     } finally {
       setBusy(false)
     }
@@ -121,27 +124,27 @@ export function ModelUploadField({
     const mtls = picked.filter((f) => extOf(f.name) === "mtl")
     const bad = picked.find((f) => !["mtl", ...IMG].includes(extOf(f.name)))
     if (bad) {
-      setMatStatus(`올릴 수 없는 파일: ${bad.name} (.mtl · png/jpg/webp 만)`)
+      setMatStatus(L(`올릴 수 없는 파일: ${bad.name} (.mtl · png/jpg/webp 만)`, `Can't upload ${bad.name} (.mtl · png/jpg/webp only)`))
       return
     }
     if (mtls.length > 1) {
-      setMatStatus(".mtl 은 1개만 골라 주세요")
+      setMatStatus(L(".mtl 은 1개만 골라 주세요", "Choose only one .mtl"))
       return
     }
     if (picked.length - mtls.length > MAX_TEXTURES) {
-      setMatStatus(`텍스처 이미지는 ${MAX_TEXTURES}장까지 올릴 수 있습니다`)
+      setMatStatus(L(`텍스처 이미지는 ${MAX_TEXTURES}장까지 올릴 수 있습니다`, `Up to ${MAX_TEXTURES} texture images`))
       return
     }
     setBusy(true)
     const done: Uploaded[] = []
     try {
       for (const [i, file] of picked.entries()) {
-        setMatStatus(`업로드 중… (${i + 1}/${picked.length}) ${file.name}`)
+        setMatStatus(L(`업로드 중… (${i + 1}/${picked.length}) ${file.name}`, `Uploading… (${i + 1}/${picked.length}) ${file.name}`))
         done.push(await uploadOne(file, folder))
       }
       setMatStatus("")
     } catch (e) {
-      setMatStatus(e instanceof Error ? e.message : "업로드 실패")
+      setMatStatus(e instanceof Error ? loc(e.message) : L("업로드 실패", "Upload failed"))
     } finally {
       // 새 MTL 을 올리면 예전 MTL 은 목록에서 뺀다 (이미지는 이름이 같을 때만 바꿈)
       setMats((cur) => {
@@ -158,10 +161,10 @@ export function ModelUploadField({
   const inFolder = !!folder && source.startsWith(`products/${folder}/`)
   const canBake = isObj && inFolder && !busy
   const bakeTitle = !isObj
-    ? "먼저 .obj 파일을 올려 주세요"
+    ? L("먼저 .obj 파일을 올려 주세요", "Upload an .obj file first")
     : !inFolder
-      ? "이 상품 폴더에 올린 OBJ만 구울 수 있습니다 — 파일을 다시 올려 주세요"
-      : "GYEOL 표준 몸에 맞춰 굽기 (크기·높이·여유 조절 + 미리보기)"
+      ? L("이 상품 폴더에 올린 OBJ만 구울 수 있습니다 — 파일을 다시 올려 주세요", "Only OBJ files uploaded to this product folder can be baked — upload it again")
+      : L("GYEOL 표준 몸에 맞춰 굽기 (크기·높이·여유 조절 + 미리보기)", "Bake to the GYEOL standard body (size, height, clearance + preview)")
 
   const box = "rounded-lg border p-3"
 
@@ -172,7 +175,7 @@ export function ModelUploadField({
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
         {/* 3D 파일 (.obj) */}
         <div className={box}>
-          <div className="mb-1 text-xs font-medium">① 3D 파일 (.obj)</div>
+          <div className="mb-1 text-xs font-medium">{L("① 3D 파일 (.obj)", "① 3D file (.obj)")}</div>
           <input
             name={name}
             value={value}
@@ -195,7 +198,7 @@ export function ModelUploadField({
 
         {/* MTL + 텍스처 */}
         <div className={box}>
-          <div className="mb-1 text-xs font-medium">② 색 파일 (.mtl) + 텍스처 이미지</div>
+          <div className="mb-1 text-xs font-medium">{L("② 색 파일 (.mtl) + 텍스처 이미지", "② Color file (.mtl) + texture images")}</div>
           <input
             type="file"
             multiple
@@ -218,7 +221,7 @@ export function ModelUploadField({
           )}
           {matStatus && <p className="mt-1 text-xs text-muted-foreground">{matStatus}</p>}
           <p className="mt-1 text-[11px] text-muted-foreground">
-            .mtl 1개와 텍스처 이미지를 함께 고르세요. 블렌더 OBJ 내보내기에서 Path Mode 를 Copy 로 두면 이미지가 같이 나옵니다.
+            {L(".mtl 1개와 텍스처 이미지를 함께 고르세요. 블렌더 OBJ 내보내기에서 Path Mode 를 Copy 로 두면 이미지가 같이 나옵니다.", "Choose one .mtl together with the texture images. In Blender's OBJ export, set Path Mode to Copy to get the images too.")}
           </p>
         </div>
 
@@ -231,20 +234,20 @@ export function ModelUploadField({
             title={bakeTitle}
             className="w-full rounded-lg bg-black px-5 py-3 text-sm text-white disabled:opacity-40 md:w-auto"
           >
-            {bakeOpen ? "3D 굽기 닫기" : "3D 굽기"}
+            {bakeOpen ? L("3D 굽기 닫기", "Close 3D bake") : L("3D 굽기", "3D bake")}
           </button>
         </div>
       </div>
 
       {model?.ext === "obj" && !mats.some((f) => f.ext === "mtl") && warn.length === 0 && (
-        <p className="text-xs text-amber-700">MTL 없이 OBJ만 올렸습니다 — 앱에서 회색 단색으로 나옵니다.</p>
+        <p className="text-xs text-amber-700">{L("MTL 없이 OBJ만 올렸습니다 — 앱에서 회색 단색으로 나옵니다.", "Only the OBJ was uploaded, no MTL — it will show as plain gray in the app.")}</p>
       )}
       {warn.map((w) => (
         <p key={w} className="text-xs text-amber-700">
           {w}
         </p>
       ))}
-      {!folder && <p className="text-xs text-muted-foreground">상품 이름(폴더)을 먼저 정하면 파일을 올릴 수 있습니다.</p>}
+      {!folder && <p className="text-xs text-muted-foreground">{L("상품 이름(폴더)을 먼저 정하면 파일을 올릴 수 있습니다.", "Files can be uploaded once the product folder is set.")}</p>}
 
       {bakeOpen && canBake && (
         <div className="rounded-lg border bg-neutral-50/50 p-4">

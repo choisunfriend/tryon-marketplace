@@ -5,6 +5,7 @@ import Image from "next/image"
 import type { ProductImage } from "@/types"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { useL } from "@/i18n/use-l"
 
 interface ProductGalleryProps {
   images: ProductImage[]
@@ -12,6 +13,7 @@ interface ProductGalleryProps {
 }
 
 export function ProductGallery({ images, productName = "Product" }: ProductGalleryProps) {
+  const { L } = useL()
   const [selectedIndex, setSelectedIndex] = useState(0)
   const currentImage = images[selectedIndex]
 
@@ -42,7 +44,7 @@ export function ProductGallery({ images, productName = "Product" }: ProductGalle
                   ? "border-foreground"
                   : "border-transparent hover:border-neutral-300"
               )}
-              aria-label={`View image ${index + 1}`}
+              aria-label={L(`이미지 ${index + 1} 보기`, `View image ${index + 1}`)}
             >
               <Image
                 src={image.url ?? PLACEHOLDER_IMAGE}

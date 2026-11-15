@@ -6,12 +6,14 @@ import Image from "next/image"
 import { useRecentlyViewedStore } from "@/store/recently-viewed"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
 import { formatPrice } from "@/lib/utils"
+import { useL } from "@/i18n/use-l"
 
 interface RecentlyViewedProps {
   excludeProductId?: string
 }
 
 export function RecentlyViewed({ excludeProductId }: RecentlyViewedProps) {
+  const { L } = useL()
   const getItems = useRecentlyViewedStore((s) => s.getItems)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -23,7 +25,7 @@ export function RecentlyViewed({ excludeProductId }: RecentlyViewedProps) {
 
   return (
     <section className="mt-16">
-      <h2 className="text-xl font-bold tracking-tight">Recently Viewed</h2>
+      <h2 className="text-xl font-bold tracking-tight">{L("최근 본 상품", "Recently Viewed")}</h2>
       <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
         {items.map((item) => (
           <Link

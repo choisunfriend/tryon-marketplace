@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import type { OrderStatus } from "@/types"
+import { useL } from "@/i18n/use-l"
 
 const statusStyles: Record<OrderStatus, string> = {
   pending: "bg-status-pending-bg text-status-pending-text",
@@ -10,14 +11,24 @@ const statusStyles: Record<OrderStatus, string> = {
   refunded: "bg-status-refunded-bg text-status-refunded-text",
 }
 
+const statusKo: Record<OrderStatus, string> = {
+  pending: "대기",
+  processing: "처리 중",
+  shipped: "배송 중",
+  delivered: "배송 완료",
+  cancelled: "취소됨",
+  refunded: "환불됨",
+}
+
 interface OrderStatusBadgeProps {
   status: OrderStatus
 }
 
 export function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
+  const { L } = useL()
   return (
     <Badge className={statusStyles[status] ?? ""} variant="secondary">
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {L(statusKo[status] ?? status, status.charAt(0).toUpperCase() + status.slice(1))}
     </Badge>
   )
 }

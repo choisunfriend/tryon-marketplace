@@ -2,6 +2,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { PaginationMeta } from "@/types"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useL } from "@/i18n/use-l"
 
 interface PaginationProps {
   pagination: PaginationMeta
@@ -14,6 +15,7 @@ export function Pagination({
   basePath,
   searchParams = {},
 }: PaginationProps) {
+  const { L } = useL()
   const { page, totalPages, hasNext, hasPrev } = pagination
 
   if (totalPages <= 1) return null
@@ -38,13 +40,13 @@ export function Pagination({
   return (
     <nav
       className="flex items-center justify-center gap-1"
-      aria-label="Pagination"
+      aria-label={L("페이지 이동", "Pagination")}
     >
       {hasPrev ? (
         <Link
           href={buildHref(page - 1)}
           className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
-          aria-label="Previous page"
+          aria-label={L("이전 페이지", "Previous page")}
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
@@ -74,7 +76,7 @@ export function Pagination({
         <Link
           href={buildHref(page + 1)}
           className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
-          aria-label="Next page"
+          aria-label={L("다음 페이지", "Next page")}
         >
           <ChevronRight className="h-4 w-4" />
         </Link>

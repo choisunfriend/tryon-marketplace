@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
 import { distanceKm, formatMinor, geocode, MAP_STYLE_URL } from "@/lib/map"
 import { browserMapView, localizeMapLabels } from "@/lib/browser-locale"
+import { useL } from "@/i18n/client"
 
 // ============================================================================
 // (2026-11-01) 미용실 세계 지도
@@ -51,7 +52,11 @@ interface SalonDetail extends SalonPin {
 }
 
 const WORLD = { center: [127.0, 30.0] as [number, number], zoom: 1.6 }
-const GENDER_LABEL = { male: "남성", female: "여성", both: "공용" }
+const GENDER_LABEL = {
+  male: { ko: "남성", en: "Men" },
+  female: { ko: "여성", en: "Women" },
+  both: { ko: "공용", en: "Unisex" },
+}
 
 function toGeoJSON(list: SalonPin[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
@@ -65,6 +70,7 @@ function toGeoJSON(list: SalonPin[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
 }
 
 export function SalonMap() {
+  const { L, lang } = useL()
   const boxRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
   const loadSeq = useRef(0)
@@ -90,8 +96,8 @@ export function SalonMap() {
       const d = e.data as { type?: string; ok?: boolean; error?: string } | null
       if (!d || d.type !== "gyeol-style-result") return
       setTryingId(null)
-      if (d.ok) toast.success("GYEOL 에 스타일을 입혔어요")
-      else toast.error(d.error || "스타일을 입히지 못했어요")
+      if (d.ok) toast.success(L("GYEOL 에 스타일을 입혔어요", "Style applied in GYEOL"))
+      else toast.error(d.error || L("스타일을 입히지 못했어요", "Couldn't apply the style"))
     }
     window.addEventListener("message", onMsg)
     return () => {
@@ -130,7 +136,7 @@ export function SalonMap() {
       setSelected({ salon: d.salon, styles: d.styles })
       mapRef.current?.easeTo({ center: [d.salon.lng, d.salon.lat], zoom: Math.max(mapRef.current.getZoom(), 14) })
     } catch {
-      toast.error("미용실 정보를 불러오지 못했어요")
+      toast.error(L("미용실 정보를 불러오지 못했어요", "Couldn't load salon info"))
     } finally {
       setLoadingDetail(false)
     }
@@ -155,7 +161,7 @@ export function SalonMap() {
           cooperativeGestures: false,
         })
       } catch {
-        setMapError("이 기기에서 지도를 그릴 수 없어요 (WebGL 꺼짐)")
+        setMapError(L("이 기기에서 지도를 그릴 수 없어요 (WebGL 꺼짐)", "This device can't draw the map (WebGL is off)"))
         return
       }
       mapRef.current = map
@@ -164,7 +170,7 @@ export function SalonMap() {
 
       map.on("load", () => {
         if (!map) return
-        localizeMapLabels(map) // (2026-11-14) 지명을 브라우저 언어로 (자동 번역은 지도 타일 글자를 못 바꿈)
+        localizeMapLabels(map, lang) // (2026-11-14) 지명을 화면 언어로 (지도 타일 글자는 따로 바꿔야 함)
         map.addSource("salons", {
           type: "geojson",
           data: toGeoJSON([]),
@@ -267,13 +273,13 @@ export function SalonMap() {
 
   const locate = useCallback((quiet = false) => {
     if (!("geolocation" in navigator)) {
-      if (!quiet) toast.error("이 기기에서는 위치를 쓸 수 없어요")
+      if (!quiet) toast.error(L("이 기기에서는 위치를 쓸 수 없어요", "Location isn't available on this device"))
       return
     }
     navigator.geolocation.getCurrentPosition(
       (p) => mapRef.current?.flyTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 13 }),
       () => {
-        if (!quiet) toast.error("위치 권한이 없어요 — 위 검색창에 동네 이름을 넣어 보세요")
+        if (!quiet) toast.error(L("위치 권한이 없어요 — 위 검색창에 동네 이름을 넣어 보세요", "No location permission — try typing a neighborhood in the search box above"))
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 }
     )
@@ -294,10 +300,10 @@ export function SalonMap() {
     if (!q) return
     try {
       const hit = await geocode(q)
-      if (!hit) return toast.error("그 장소를 찾지 못했어요")
+      if (!hit) return toast.error(L("그 장소를 찾지 못했어요", "Couldn't find that place"))
       mapRef.current?.flyTo({ center: [hit.lng, hit.lat], zoom: 13 })
     } catch {
-      toast.error("검색하지 못했어요")
+      toast.error(L("검색하지 못했어요", "Search failed"))
     }
   }
 
@@ -305,7 +311,7 @@ export function SalonMap() {
   async function tryOn(style: Style) {
     if (!selected) return
     if (parentAppOrigin() === null) {
-      toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
+      toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
       return
     }
     setTryingId(style.id)
@@ -317,7 +323,7 @@ export function SalonMap() {
       spec = d.style.spec
     } catch {
       setTryingId(null)
-      toast.error("스타일을 불러오지 못했어요")
+      toast.error(L("스타일을 불러오지 못했어요", "Couldn't load the style"))
       return
     }
     const sent = postToApp({
@@ -330,10 +336,10 @@ export function SalonMap() {
     })
     if (!sent) {
       setTryingId(null)
-      toast.error("GYEOL 앱 안에서만 입어 볼 수 있어요")
+      toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
       return
     }
-    toast("GYEOL 에서 스타일을 입히는 중…")
+    toast(L("GYEOL 에서 스타일을 입히는 중…", "Applying the style in GYEOL…"))
     setTimeout(() => setTryingId((cur) => (cur === style.id ? null : cur)), 15000)
   }
 
@@ -348,7 +354,7 @@ export function SalonMap() {
       {/* 지도 */}
       <div className="relative min-h-[55%] flex-1">
         {/* maplibre CSS 가 컨테이너에 position:relative 를 걸어 Tailwind absolute 를 덮으므로 인라인으로 고정 */}
-        <div ref={boxRef} style={{ position: "absolute", inset: 0 }} aria-label="미용실 지도" />
+        <div ref={boxRef} style={{ position: "absolute", inset: 0 }} aria-label={L("미용실 지도", "Salon map")} />
         {mapError && (
           <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 p-6 text-center text-sm">{mapError}</div>
         )}
@@ -356,11 +362,11 @@ export function SalonMap() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="도시·동네·주소 검색 (예: 성수동, Shibuya)"
+            placeholder={L("도시·동네·주소 검색 (예: 성수동, Shibuya)", "Search a city, neighborhood or address (e.g. Seongsu, Shibuya)")}
             className="bg-white/95 shadow"
-            aria-label="장소 검색"
+            aria-label={L("장소 검색", "Search places")}
           />
-          <Button type="submit" size="icon" variant="secondary" className="shrink-0 shadow" aria-label="검색">
+          <Button type="submit" size="icon" variant="secondary" className="shrink-0 shadow" aria-label={L("검색", "Search")}>
             <Search className="h-4 w-4" />
           </Button>
         </form>
@@ -370,7 +376,7 @@ export function SalonMap() {
           variant="secondary"
           className="absolute bottom-8 right-3 shadow"
           onClick={() => locate(false)}
-          aria-label="내 위치"
+          aria-label={L("내 위치", "My location")}
         >
           <LocateFixed className="h-4 w-4" />
         </Button>
@@ -392,7 +398,7 @@ export function SalonMap() {
                 <h2 className="text-lg font-semibold">{selected.salon.name}</h2>
                 <p className="text-xs text-muted-foreground">{selected.salon.store_name}</p>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => setSelected(null)} aria-label="닫기">
+              <Button size="icon" variant="ghost" onClick={() => setSelected(null)} aria-label={L("닫기", "Close")}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -419,14 +425,14 @@ export function SalonMap() {
                 rel="noopener noreferrer"
                 className="mb-4 inline-flex items-center gap-1 text-sm font-medium underline"
               >
-                예약하기 <ExternalLink className="h-3.5 w-3.5" />
+                {L("예약하기", "Book")} <ExternalLink className="h-3.5 w-3.5" />
               </a>
             )}
 
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Scissors className="h-4 w-4" /> 헤어스타일 {selected.styles.length}
+              <Scissors className="h-4 w-4" /> {L("헤어스타일", "Hairstyles")} {selected.styles.length}
             </h3>
-            {!selected.styles.length && <p className="text-sm text-muted-foreground">아직 올린 스타일이 없어요.</p>}
+            {!selected.styles.length && <p className="text-sm text-muted-foreground">{L("아직 올린 스타일이 없어요.", "No styles posted yet.")}</p>}
             <ul className="space-y-2">
               {selected.styles.map((st) => (
                 <li key={st.id} className="flex items-center gap-3 rounded-md border p-2">
@@ -443,32 +449,33 @@ export function SalonMap() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{st.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      <Badge variant="outline" className="mr-1 px-1 py-0 text-[10px]">{GENDER_LABEL[st.gender]}</Badge>
-                      {formatMinor(st.price_minor, st.currency) ?? "가격 문의"}
-                      {st.duration_min ? ` · ${st.duration_min}분` : ""}
+                      <Badge variant="outline" className="mr-1 px-1 py-0 text-[10px]">{L(GENDER_LABEL[st.gender].ko, GENDER_LABEL[st.gender].en)}</Badge>
+                      {formatMinor(st.price_minor, st.currency) ?? L("가격 문의", "Price on request")}
+                      {st.duration_min ? L(` · ${st.duration_min}분`, ` · ${st.duration_min} min`) : ""}
                     </p>
                   </div>
                   {inGyeol && (
                     <Button size="sm" onClick={() => void tryOn(st)} disabled={tryingId === st.id}>
-                      {tryingId === st.id ? "입히는 중…" : "입어 보기"}
+                      {tryingId === st.id ? L("입히는 중…", "Applying…") : L("입어 보기", "Try it on")}
                     </Button>
                   )}
                 </li>
               ))}
             </ul>
             {!inGyeol && selected.styles.length > 0 && (
-              <p className="mt-3 text-xs text-muted-foreground">GYEOL 앱에서 열면 내 얼굴에 바로 입어 볼 수 있어요.</p>
+              <p className="mt-3 text-xs text-muted-foreground">{L("GYEOL 앱에서 열면 내 얼굴에 바로 입어 볼 수 있어요.", "Open this in the GYEOL app to try it on your own face.")}</p>
             )}
           </div>
         ) : loadingDetail ? (
-          <p className="p-4 text-sm text-muted-foreground">미용실 정보를 불러오는 중…</p>
+          <p className="p-4 text-sm text-muted-foreground">{L("미용실 정보를 불러오는 중…", "Loading salon info…")}</p>
         ) : (
           <div className="p-4">
-            <h2 className="mb-1 text-base font-semibold">이 근처 미용실</h2>
+            <h2 className="mb-1 text-base font-semibold">{L("이 근처 미용실", "Salons nearby")}</h2>
             <p className="mb-3 text-xs text-muted-foreground">
-              지도를 움직이면 그 지역 미용실이 나와요{truncated ? " · 너무 많아 일부만 보여요, 확대해 보세요" : ""}
+              {L("지도를 움직이면 그 지역 미용실이 나와요", "Move the map to see salons in that area")}
+              {truncated ? L(" · 너무 많아 일부만 보여요, 확대해 보세요", " · too many to show them all — zoom in") : ""}
             </p>
-            {!nearby.length && <p className="text-sm text-muted-foreground">이 지역엔 아직 등록된 미용실이 없어요.</p>}
+            {!nearby.length && <p className="text-sm text-muted-foreground">{L("이 지역엔 아직 등록된 미용실이 없어요.", "No salons registered in this area yet.")}</p>}
             <ul className="divide-y">
               {nearby.map((s) => (
                 <li key={s.id}>
@@ -481,7 +488,7 @@ export function SalonMap() {
                     <span className="shrink-0 text-right text-xs text-muted-foreground">
                       {s.km < 1 ? `${Math.round(s.km * 1000)}m` : `${s.km.toFixed(s.km < 10 ? 1 : 0)}km`}
                       <br />
-                      스타일 {s.style_count}
+                      {L("스타일", "Styles")} {s.style_count}
                     </span>
                   </button>
                 </li>

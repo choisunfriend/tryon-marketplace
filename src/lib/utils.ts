@@ -16,8 +16,9 @@ export function formatPrice(
   }).format(priceInCents / 100)
 }
 
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat("en-US", {
+// (2026-11-14) lang: 화면 언어 ("ko" → 2026년 11월 14일 꼴)
+export function formatDate(date: string | Date, lang: string = "en"): string {
+  return new Intl.DateTimeFormat(lang === "ko" ? "ko-KR" : "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
