@@ -10,6 +10,7 @@ import { useRecentlyViewedStore } from "@/store/recently-viewed"
 import { RecentlyViewed } from "@/components/products/recently-viewed"
 import { StarRating } from "@/components/products/star-rating"
 import { TrustSignals } from "@/components/products/trust-signals"
+import { ProductShopsMap } from "@/components/salons/product-shops-map"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
@@ -324,6 +325,9 @@ export function ProductDetailView({
               {L("지금은 품절된 상품이에요.", "This item is currently out of stock.")}
             </p>
           )}
+
+          {/* (2026-11-22) 이 상품을 파는 오프라인 매장 — 작은 지도, 누르면 큰 지도(/salons?shop=) */}
+          <ProductShopsMap productId={product.id} />
 
           <Separator className="my-6" />
 
