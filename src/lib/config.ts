@@ -20,7 +20,7 @@ export const siteConfig = {
 
   // Contact
   contact: {
-    email: "" /* TODO: 회사 고객센터 이메일 */,
+    email: "choisunfriend@gmail.com" /* TODO: 회사 고객센터 이메일 */,
     phone: "",
     address: {
       street: "",
