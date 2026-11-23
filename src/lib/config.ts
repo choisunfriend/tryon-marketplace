@@ -9,7 +9,7 @@ export const siteConfig = {
   tagline: "A free, open-source Next.js ecommerce template.",
   taglineKo: "무료 오픈소스 Next.js 쇼핑몰 템플릿.",
   description:
-    "A free, production-ready Next.js ecommerce starter template built with Tailwind CSS and shadcn/ui. Responsive, accessible, SEO optimized, and ready to connect to any checkout system. Built by Epic Design Labs.",
+    "A free, production-ready Next.js ecommerce starter template built with Tailwind CSS and shadcn/ui. Responsive, accessible, SEO optimized, and ready to connect to any checkout system.",
 
   // Announcement bar (set to "" to hide)
   announcement: "Free shipping on all orders over $75 — Shop now!",
@@ -20,7 +20,7 @@ export const siteConfig = {
 
   // Contact
   contact: {
-    email: "support@epicdesignlabs.com",
+    email: "" /* TODO: 회사 고객센터 이메일 */,
     phone: "",
     address: {
       street: "",
@@ -33,9 +33,9 @@ export const siteConfig = {
 
   // Social links (set to "" to hide)
   social: {
-    twitter: "https://x.com/epicdesignlabs",
-    instagram: "https://instagram.com/epicdesignlabs",
-    facebook: "https://facebook.com/epicdesignlabs",
+    twitter: "",
+    instagram: "",
+    facebook: "",
     youtube: "",
     tiktok: "",
   },

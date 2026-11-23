@@ -137,16 +137,6 @@ export function Footer() {
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             &copy; {siteConfig.copyrightYear} {siteConfig.name}. {L("모든 권리 보유.", "All rights reserved.")}
-            <br className="sm:hidden" />
-            {" "}{L("디자인", "Design by")}{" "}
-            <a
-              href="https://epicdesignlabs.com"
-              target="_blank"
-              rel="noopener"
-              className="underline hover:text-foreground"
-            >
-              Epic Design Labs
-            </a>
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-muted-foreground transition-colors hover:text-foreground" aria-label="Twitter">
