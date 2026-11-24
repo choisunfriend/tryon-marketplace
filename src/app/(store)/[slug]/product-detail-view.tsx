@@ -103,6 +103,19 @@ export function ProductDetailView({
     else toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
   }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
+  // (2026-11-24) 입어 보기 옆에 (남성용, 상의)처럼 어느 몸·어느 자리 옷인지 표시
+  const wearGender = (product.avatar?.gender ?? product.gender ?? product.model3d?.gender ?? "").toString().toLowerCase()
+  const wearPart = (product.avatar?.body_part ?? product.model3d?.bodyPart ?? "").toString().toLowerCase()
+  const genderLabel: Record<string, [string, string]> = {
+    male: ["남성용", "Men"], female: ["여성용", "Women"], unisex: ["공용", "Unisex"],
+  }
+  const partLabel: Record<string, [string, string]> = {
+    upper_body: ["상의", "Top"], lower_body: ["하의", "Bottom"], outer: ["외투", "Outerwear"], full_body: ["한 벌", "Full outfit"],
+  }
+  const wearInfo = [genderLabel[wearGender], partLabel[wearPart]]
+    .filter((v): v is [string, string] => Boolean(v))
+    .map(([ko, en]) => L(ko, en))
+    .join(", ")
 
   // Track recently viewed
   useEffect(() => {
@@ -316,6 +329,7 @@ export function ProductDetailView({
               >
                 <Shirt className="mr-2 h-4 w-4" />
                 {L("입어 보기", "Try on")}
+                {wearInfo && <span className="ml-1 text-xs font-normal opacity-80">({wearInfo})</span>}
               </Button>
             )}
           </div>
