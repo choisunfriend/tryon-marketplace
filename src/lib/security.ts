@@ -13,7 +13,7 @@
 export const ADMIN_COOKIE = "admin_session"
 export const ADMIN_SESSION_SECONDS = 8 * 60 * 60 // 8시간
 
-// GYEOL 앱이 실제로 열리는 주소 (마켓플레이스를 iframe 으로 띄우고, 3D 파일을 받아 가는 곳)
+// Today's Stylepeek 앱이 실제로 열리는 주소 (마켓플레이스를 iframe 으로 띄우고, 3D 파일을 받아 가는 곳)
 export const DEFAULT_APP_ORIGINS = ["https://choisunfriend.github.io"]
 
 export function appOrigins(): string[] {

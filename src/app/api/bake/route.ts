@@ -8,7 +8,7 @@ import { removeOldBakes } from "@/lib/model-cleanup"
 // ============================================================================
 // 관리자 화면(브라우저)에서 구운 OBJ를 받아 R2에 저장하고,
 // 상품 폴더에 fitted.json(몸별 구운 파일 목록)을 남깁니다.
-// GYEOL 앱은 fitted.json 이 있으면 구운 파일을, 없으면 원본을 자동 맞춤해서 씁니다.
+// Today's Stylepeek 앱은 fitted.json 이 있으면 구운 파일을, 없으면 원본을 자동 맞춤해서 씁니다.
 //
 //   products/{folder}/model/{원본이름}.{male|female}.fitted.{시각}.obj
 //   products/{folder}/model/{원본이름}.{male|female}.bind.{시각}.json   ← 몸 묶음 기록

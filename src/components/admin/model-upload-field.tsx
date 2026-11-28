@@ -164,7 +164,7 @@ export function ModelUploadField({
     ? L("먼저 .obj 파일을 올려 주세요", "Upload an .obj file first")
     : !inFolder
       ? L("이 상품 폴더에 올린 OBJ만 구울 수 있습니다 — 파일을 다시 올려 주세요", "Only OBJ files uploaded to this product folder can be baked — upload it again")
-      : L("GYEOL 표준 몸에 맞춰 굽기 (크기·높이·여유 조절 + 미리보기)", "Bake to the GYEOL standard body (size, height, clearance + preview)")
+      : L("Today's Stylepeek 표준 몸에 맞춰 굽기 (크기·높이·여유 조절 + 미리보기)", "Bake to the Today's Stylepeek standard body (size, height, clearance + preview)")
 
   const box = "rounded-lg border p-3"
 

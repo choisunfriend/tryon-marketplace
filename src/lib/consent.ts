@@ -14,7 +14,7 @@ export interface ConsentItem {
 
 export const CONSENT_ITEMS: ConsentItem[] = [
   { id: "age14", required: true, label: ["만 14세 이상입니다", "I am 14 years of age or older"] },
-  { id: "terms", required: true, label: ["오늘의 스타일픽 이용약관 동의", "Terms of Service"], doc: "terms" },
+  { id: "terms", required: true, label: ["Today's Stylepeek 이용약관 동의", "Terms of Service"], doc: "terms" },
   { id: "privacy", required: true, label: ["개인정보 수집 및 이용 동의", "Collection and use of personal information"], doc: "privacy-consent" },
   { id: "salon_share", required: true, label: ["예약 시 미용실에 개인정보 제공 동의", "Sharing my booking details with the salon"], doc: "salon-share" },
   { id: "marketing", required: false, label: ["이벤트·혜택 알림 수신 동의", "Receive offers and event news"], doc: "marketing" },

@@ -1,9 +1,9 @@
 // ============================================================================
-// 3D 옷 굽기 — 판매자가 올린 OBJ를 GYEOL 표준 몸(남/여)에 맞춰 둔다
+// 3D 옷 굽기 — 판매자가 올린 OBJ를 Today's Stylepeek 표준 몸(남/여)에 맞춰 둔다
 // ============================================================================
 // 1) 맞춤: 크기·위치를 몸 좌표로 옮김 (상의=목 아래 · 하의=허리 · 전신=목~발목)
 // 2) 굽기: 몸을 뚫고 들어간 정점만 몸 표면 법선 방향으로 밀고, 그 변위를
-//    옷 메쉬 위에서 부드럽게 퍼뜨린다 (GYEOL tools/conform.py 와 같은 방식).
+//    옷 메쉬 위에서 부드럽게 퍼뜨린다 (Today's Stylepeek tools/conform.py 와 같은 방식).
 //    옷의 주름·실루엣은 그대로 두고 몸이 비어져 나오지 않게 한다.
 // 브라우저·Node 어디서든 돌도록 DOM·three.js 에 의존하지 않는다.
 // ============================================================================
@@ -238,7 +238,7 @@ export function isInBodySpace(gb: Box, body: BodyFigure): boolean {
 export function placeGarment(src: Float32Array, body: BodyFigure, opt: PlaceOptions): { pos: Float32Array; report: PlaceReport } {
   const pos = new Float32Array(src)
   let gb = boxOf(pos)
-  // 이미 이 몸 좌표에 맞춰 만든 옷(GYEOL conform.py·MakeHuman 의상 등)은 옮기지 않는다
+  // 이미 이 몸 좌표에 맞춰 만든 옷(Today's Stylepeek conform.py·MakeHuman 의상 등)은 옮기지 않는다
   // 크기·높이 슬라이더는 원본 위치를 기준으로(목 중심·옷 꼭대기) 그대로 적용한다
   if ((opt.keepAsIs ?? true) && isInBodySpace(gb, body)) {
     const s = opt.scaleMul
@@ -426,7 +426,7 @@ export interface BakeResult {
 export function bakeGarment(garment: ParsedObj, body: BodyFigure, opt: BakeOptions): BakeResult {
   const { pos, report } = placeGarment(garment.pos, body, opt)
   const conform = conformGarment(pos, garment.faces, body, opt.clearance)
-  const header = `# GYEOL baked for body_${body.gender} · kind ${report.kind} · scale ${report.scale.toFixed(4)} · clearance ${opt.clearance}`
+  const header = `# Today's Stylepeek baked for body_${body.gender} · kind ${report.kind} · scale ${report.scale.toFixed(4)} · clearance ${opt.clearance}`
   const binding = bindGarment(pos, body)
   const back = applyBinding(binding, body.obj.pos)
   let bindError = 0

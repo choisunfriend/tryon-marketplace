@@ -19,7 +19,7 @@ import { useL } from "@/i18n/client"
 // (2026-11-01) 미용실 세계 지도
 // ============================================================================
 // · 화면에 보이는 범위의 미용실만 /api/salons?bbox= 로 가져와 묶음(cluster) 점으로 표시
-// · 점을 누르면 그 미용실의 헤어스타일 목록 → "입어 보기" 를 누르면 GYEOL 앱에
+// · 점을 누르면 그 미용실의 헤어스타일 목록 → "입어 보기" 를 누르면 Today's Stylepeek 앱에
 //   { type: "gyeol-style", id, name, salon, spec } 를 보냄 → 앱(js/35-salon-bridge.js)이 3D 머리에 적용
 // · 내 위치는 앱 iframe 에 allow="geolocation" 이 있어야 물어볼 수 있음(없으면 검색·드래그로 이동)
 // (2026-11-22) 옷가게 지점(/api/shops)도 같은 지도에 — 미용실은 갈색 점, 옷가게는 파란 점 · 위쪽 칩으로 걸러 봄
@@ -194,7 +194,7 @@ export function SalonMap() {
   const [shopSel, setShopSel] = useState<{ shop: ShopDetail; products: MenuItem[] } | null>(null)
   const [kind, setKind] = useState<Kind>("all")
 
-  // GYEOL 앱 안인지 (Try on 버튼 표시)
+  // Today's Stylepeek 앱 안인지 (Try on 버튼 표시)
   useEffect(() => {
     const update = () => setInGyeol(parentAppOrigin() !== null)
     update()
@@ -206,7 +206,7 @@ export function SalonMap() {
       const d = e.data as { type?: string; ok?: boolean; error?: string } | null
       if (!d || d.type !== "gyeol-style-result") return
       setTryingId(null)
-      if (d.ok) toast.success(L("GYEOL 에 스타일을 입혔어요", "Style applied in GYEOL"))
+      if (d.ok) toast.success(L("Today's Stylepeek 에 스타일을 입혔어요", "Style applied in Today's Stylepeek"))
       else toast.error(d.error || L("스타일을 입히지 못했어요", "Couldn't apply the style"))
     }
     window.addEventListener("message", onMsg)
@@ -423,7 +423,7 @@ export function SalonMap() {
   async function tryOn(style: Style) {
     if (!selected) return
     if (parentAppOrigin() === null) {
-      toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
+      toast.error(L("Today's Stylepeek 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the Today's Stylepeek app"))
       return
     }
     setTryingId(style.id)
@@ -448,10 +448,10 @@ export function SalonMap() {
     })
     if (!sent) {
       setTryingId(null)
-      toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
+      toast.error(L("Today's Stylepeek 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the Today's Stylepeek app"))
       return
     }
-    toast(L("GYEOL 에서 스타일을 입히는 중…", "Applying the style in GYEOL…"))
+    toast(L("Today's Stylepeek 에서 스타일을 입히는 중…", "Applying the style in Today's Stylepeek…"))
     setTimeout(() => setTryingId((cur) => (cur === style.id ? null : cur)), 15000)
   }
 
@@ -473,8 +473,8 @@ export function SalonMap() {
         avatar: { gender: p.gender, body_part: p.body_part },
       },
     })
-    if (sent) toast.success(L("GYEOL에서 입혀 보는 중…", "Trying it on in GYEOL…"))
-    else toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
+    if (sent) toast.success(L("Today's Stylepeek에서 입혀 보는 중…", "Trying it on in Today's Stylepeek…"))
+    else toast.error(L("Today's Stylepeek 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the Today's Stylepeek app"))
   }
 
   type NearItem = { kind: "salon" | "shop"; id: string; name: string; sub: string; count: number; km: number }
@@ -604,7 +604,7 @@ export function SalonMap() {
               ))}
             </ul>
             {!inGyeol && shopSel.products.length > 0 && (
-              <p className="mt-3 text-xs text-muted-foreground">{L("GYEOL 앱에서 열면 내 몸에 바로 입어 볼 수 있어요.", "Open this in the GYEOL app to try it on your own body.")}</p>
+              <p className="mt-3 text-xs text-muted-foreground">{L("Today's Stylepeek 앱에서 열면 내 몸에 바로 입어 볼 수 있어요.", "Open this in the Today's Stylepeek app to try it on your own body.")}</p>
             )}
           </div>
         ) : selected ? (
@@ -681,7 +681,7 @@ export function SalonMap() {
               ))}
             </ul>
             {!inGyeol && selected.styles.length > 0 && (
-              <p className="mt-3 text-xs text-muted-foreground">{L("GYEOL 앱에서 열면 내 얼굴에 바로 입어 볼 수 있어요.", "Open this in the GYEOL app to try it on your own face.")}</p>
+              <p className="mt-3 text-xs text-muted-foreground">{L("Today's Stylepeek 앱에서 열면 내 얼굴에 바로 입어 볼 수 있어요.", "Open this in the Today's Stylepeek app to try it on your own face.")}</p>
             )}
           </div>
         ) : loadingDetail ? (

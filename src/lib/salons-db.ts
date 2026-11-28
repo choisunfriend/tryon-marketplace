@@ -4,7 +4,7 @@ import { bi, loc } from "@/i18n/l"
 // ============================================================================
 // (2026-11-01) 미용실 지도 — salons · salon_styles (migrations/0003_salons.sql)
 // ============================================================================
-// 헤어스타일은 3D 파일이 아니라 GYEOL 앱의 "스타일 스펙"(JSON)입니다.
+// 헤어스타일은 3D 파일이 아니라 Today's Stylepeek 앱의 "스타일 스펙"(JSON)입니다.
 // 앱이 손님 사진으로 만든 3D 머리(없으면 마네킹)에 스펙(커트·펌·스타일링·컬러)을 적용해 보여 줍니다.
 // 그래서 여기서는 스펙을 "데이터로만" 안전하게 저장·전달하고, 해석은 앱이 합니다.
 // ============================================================================
@@ -175,7 +175,7 @@ function cleanValue(v: unknown, depth: number, path = ""): unknown {
 
   throw new Error(bi(`스펙은 JSON 데이터만 넣을 수 있습니다 (path: ${path || "(root)"}, type: ${typeof v})`, `The spec can only contain JSON data (path: ${path || "(root)"}, type: ${typeof v})`))
 }
-// (2026-11-01) spec.groom — GYEOL 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
+// (2026-11-01) spec.groom — Today's Stylepeek 앱이 붙이는 빗질·가닥 지우기 "명령"(base64 덩어리, 앱 js/37-groom-recipe.js)
 //   일반 규칙(글자 400자)으로는 못 담아 따로 검사: comb ≤ 260,000자 · erase ≤ 4,000자 · base64 글자만
 
 function cleanGroom(g: unknown): Record<string, unknown> | undefined {
@@ -210,11 +210,11 @@ export function cleanSpec(input: unknown): Record<string, unknown> {
   if (spec.color !== undefined && !(typeof spec.color === "string" && /^#[0-9A-Fa-f]{6}$/.test(spec.color))) {
     throw new Error(bi("color 는 #RRGGBB 형식이어야 합니다", "color must be #RRGGBB"))
   }
-  // (2026-11-01) GYEOL 앱의 「미용실에 올리기」로 만든 스펙만 받음 (앱에서만 스타일을 만들게)
+  // (2026-11-01) Today's Stylepeek 앱의 「미용실에 올리기」로 만든 스펙만 받음 (앱에서만 스타일을 만들게)
   //   ⚠ 앱이 붙이는 표시일 뿐 서명이 아니라, 마음먹고 흉내 내면 막을 수는 없음 — 관리자 화면에 입력칸을 없애 길을 막는 것
   const mark = spec.gyeol as Record<string, unknown> | undefined
   if (!mark || typeof mark !== "object" || mark.app !== "gyeol") {
-    throw new Error(bi("헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 등록할 수 있어요", "Hairstyles can only be added with “Post to salon” in the GYEOL app"))
+    throw new Error(bi("헤어스타일은 Today's Stylepeek 앱의 「미용실에 올리기」로만 등록할 수 있어요", "Hairstyles can only be added with “Post to salon” in the Today's Stylepeek app"))
   }
   if (JSON.stringify(spec).length > SPEC_MAX_BYTES) throw new Error(bi("스펙이 너무 큽니다 (512KB 이하)", "The spec is too large (512KB max)"))
   if (groom) spec.groom = groom

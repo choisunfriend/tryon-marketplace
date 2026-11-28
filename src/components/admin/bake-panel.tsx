@@ -215,7 +215,7 @@ export function BakePanel({
       onSaved?.(data.manifest)
       setSaved(data.manifest)
       setLoadMsg(L("굽기 완료", "Baked"))
-      setSaveMsg({ ok: true, text: L("구워서 저장했습니다. GYEOL 앱에서 이 옷은 이제 이 파일로 입혀집니다.", "Baked and saved. The GYEOL app now dresses this item with this file.") })
+      setSaveMsg({ ok: true, text: L("구워서 저장했습니다. Today's Stylepeek 앱에서 이 옷은 이제 이 파일로 입혀집니다.", "Baked and saved. The Today's Stylepeek app now dresses this item with this file.") })
     } catch (e) {
       setLoadMsg(L("굽기는 됐지만 저장 실패 — 아래 빨간 글씨를 확인하세요", "Baked, but saving failed — see the red message below"))
       setSaveMsg({ ok: false, text: L("저장 실패: ", "Save failed: ") + (e instanceof Error ? loc(e.message) : String(e)) })
@@ -288,7 +288,7 @@ export function BakePanel({
         <label className="flex items-start gap-2 text-sm md:col-span-2">
           <input type="checkbox" className="mt-1" checked={keepAsIs} onChange={(e) => setKeepAsIs(e.target.checked)} />
           <span>
-            {L("블렌더에서 GYEOL 몸에 맞춰 만든 옷이면 원본 크기 그대로 두기", "Keep the original size if the garment was made on the GYEOL body in Blender")}
+            {L("블렌더에서 Today's Stylepeek 몸에 맞춰 만든 옷이면 원본 크기 그대로 두기", "Keep the original size if the garment was made on the Today's Stylepeek body in Blender")}
             <span className="block text-xs text-muted-foreground">
               {L(
                 "끄면 어깨폭(하의는 허리폭) 기준으로 크기를 자동으로 다시 맞춥니다. 원본이 몸과 다른 위치·크기면 켜 둬도 자동 맞춤합니다.",

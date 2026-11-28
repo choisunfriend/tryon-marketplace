@@ -237,7 +237,7 @@ export async function notifySalon(db: D1Database, b: BookingRow, salon: { name: 
   const to = store?.contact_email
   if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return false
   const esc = (s: string | null) => (s ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
-  const subject = `[Stylepeek] 새 예약 요청 · New booking — ${salon.name} ${b.date} ${b.time}`
+  const subject = `[Today's Stylepeek] 새 예약 요청 · New booking — ${salon.name} ${b.date} ${b.time}`
   const html = `<p><b>${esc(salon.name)}</b>에 새 예약 요청이 왔습니다. / A new booking request has arrived.</p>
 <table cellpadding="4">
 <tr><td>날짜·시간 / When</td><td><b>${esc(b.date)} ${esc(b.time)}</b> (${b.duration_min}min)</td></tr>

@@ -1,4 +1,4 @@
-// (2026-11-28) 약관·방침 초안 — 【 】 부분은 사업자 정보로 채워야 합니다.
+// (2026-11-28) 약관·방침 초안 — 사업자 정보 반영됨
 // ⚠ 초안입니다. 정식 시행 전에 법률 검토(또는 공정위 표준약관 대조)를 받으세요.
 //   - 이용약관: 공정위 「전자상거래(인터넷사이버몰) 표준약관」·통신판매중개 구조(쿠팡 제33조 등) 참고
 //   - 개인정보: 개인정보보호법 제15·17·22조, 정보통신망법 제50조(광고성 정보)
@@ -8,21 +8,25 @@ export type Bi = [string, string] // [한국어, English]
 export interface Article { h: Bi; p: Bi[] }
 export interface PolicyDoc { title: Bi; effective: Bi; intro?: Bi; articles: Article[] }
 
-const BIZ: Bi = [
-  "상호 【YL Company】 · 대표 【이영조】 · 사업자등록번호 【484-21-02064】 · 통신판매업신고 【제2025-경북구미-0728호】 · 주소 【경상북도 구미시 신시로16길 141 101-1006,우39277】 · 이메일 【choisunfriend@gmail.com】",
-  "Business name 【YL Company】 · Representative 【Youngjo LEE】 · Business reg. no. 【484-21-02064】 · Mail-order reg. 【No. 2025-경북구미-0728】 · Address 【141 Sinsi-ro 16-gil, Gumi-si, Gyeongsangbuk-do,39277】 · Email 【choisunfriend@gmail.com】",
+export const BIZ: Bi = [
+  "상호 YL Company · 대표 이영조 · 사업자등록번호 484-21-02064 · 통신판매업신고 제2025-경북구미-0728호 · 주소 경북 구미시 신시로16길 141, 101동 1006호 (39277) · 이메일 choisunfriend@gmail.com",
+  "YL Company · CEO Lee Youngjo · Business reg. No. 484-21-02064 · Mail-order reg. No. 2025-경북구미-0728 (Gumi, Gyeongsangbuk-do) · 101-1006, 141 Sinsi-ro 16-gil, Gumi-si, Gyeongsangbuk-do 39277, Republic of Korea · choisunfriend@gmail.com",
+]
+export const BROKER: Bi = [
+  "YL Company는 통신판매중개자로서 거래 당사자가 아니며, 입점 판매자가 등록한 상품·서비스 정보와 거래에 대한 책임은 각 판매자에게 있습니다.",
+  "YL Company is a mail-order broker, not a party to transactions; each listed seller is responsible for its products, services and transactions.",
 ]
 const EFF: Bi = ["시행일: 2026년 12월 1일", "Effective: December 1, 2026"]
 
 export const POLICIES: Record<string, PolicyDoc> = {
   // ─────────────────────────────────────────────── 이용약관
   terms: {
-    title: ["오늘의 스타일픽 이용약관", "Today's Stylepeek Terms of Service"],
+    title: ["Today's Stylepeek 이용약관", "Today's Stylepeek Terms of Service"],
     effective: EFF,
     articles: [
       { h: ["제1조 (목적)", "1. Purpose"], p: [[
-        "이 약관은 【YL컴퍼니】(이하 \"회사\")가 운영하는 Today's Stylepeek 앱과 웹사이트(이하 \"서비스\")에서 제공하는 헤어스타일 미리보기, 미용실 찾기·예약, 상품 중개 서비스의 이용 조건과 절차, 회사와 회원의 권리·의무를 정합니다.",
-        "These Terms govern your use of the Today's Stylepeek app and website (the \"Service\") operated by 【YL Company】 (\"we\"), including hairstyle preview, salon search and booking, and the product marketplace.",
+        "이 약관은 YL Company(이하 \"회사\")가 운영하는 Today's Stylepeek 앱과 웹사이트(이하 \"서비스\")에서 제공하는 헤어스타일 미리보기, 미용실 찾기·예약, 상품 중개 서비스의 이용 조건과 절차, 회사와 회원의 권리·의무를 정합니다.",
+        "These Terms govern your use of the Today's Stylepeek app and website (the \"Service\") operated by YL Company (\"we\"), including hairstyle preview, salon search and booking, and the product marketplace.",
       ]] },
       { h: ["제2조 (정의)", "2. Definitions"], p: [
         ["1. \"회원\"이란 Apple 등 외부 계정으로 로그인해 이 약관에 동의하고 서비스를 이용하는 사람을 말합니다.", "1. \"Member\" means a person who signs in with an external account such as Apple and accepts these Terms."],
@@ -121,7 +125,7 @@ export const POLICIES: Record<string, PolicyDoc> = {
   privacy: {
     title: ["개인정보처리방침", "Privacy Policy"],
     effective: EFF,
-    intro: ["【YL컴퍼니】(이하 \"회사\")는 「개인정보 보호법」 등 관련 법령을 지키며, 회원의 개인정보를 다음과 같이 처리합니다.", "【YL Company】 (\"we\") processes your personal information as described below, in compliance with applicable laws including Korea's Personal Information Protection Act and, where applicable, the EU GDPR."],
+    intro: ["YL Company(이하 \"회사\")는 「개인정보 보호법」 등 관련 법령을 지키며, 회원의 개인정보를 다음과 같이 처리합니다.", "YL Company (\"we\") processes your personal information as described below, in compliance with applicable laws including Korea's Personal Information Protection Act and, where applicable, the EU GDPR."],
     articles: [
       { h: ["1. 처리하는 개인정보와 목적", "1. Information and purposes"], p: [
         ["· 회원 관리: 로그인 계정 고유번호, 이메일·이름(제공 시)", "· Account: sign-in account ID; email and name if provided"],
@@ -139,7 +143,8 @@ export const POLICIES: Record<string, PolicyDoc> = {
       { h: ["4. 처리 위탁 및 국외 이전", "4. Processors and international transfer"], p: [
         ["· Cloudflare, Inc.(미국) — 서버·데이터베이스 운영, 회원 탈퇴 시까지", "· Cloudflare, Inc. (USA) — hosting and database, until account deletion"],
         ["· Apple Inc.(미국) — 로그인 인증", "· Apple Inc. (USA) — sign-in authentication"],
-        ["· 【메일 발송 업체, 예: Resend(미국)】 — 예약 알림 메일(사용 시)", "· 【Email provider, e.g. Resend (USA)】 — booking emails (if used)"],
+        ["· Google LLC(미국) · 주식회사 카카오(대한민국) — 로그인 인증(해당 방식으로 로그인한 경우)", "· Google LLC (USA) · Kakao Corp. (Korea) — sign-in authentication (if you use them)"],
+        ["· Resend, Inc.(미국) — 예약 알림 메일(사용 시)", "· Resend, Inc. (USA) — booking emails (if used)"],
         ["정보는 서비스 이용 시점에 암호화된 통신으로 이전됩니다. 국외 이전을 원하지 않으면 탈퇴할 수 있으나, 이 경우 로그인·예약을 이용할 수 없습니다.", "Data is transferred over encrypted connections when you use the Service. If you object, you may delete your account, but sign-in and bookings will be unavailable."],
       ] },
       { h: ["5. 회원의 권리", "5. Your rights"], p: [
@@ -152,7 +157,7 @@ export const POLICIES: Record<string, PolicyDoc> = {
         ["접속 토큰 암호화 저장, 통신 구간 암호화(HTTPS), 관리자 접근 권한 제한, 접속 기록 보관을 시행합니다.", "We use encrypted tokens, HTTPS, restricted admin access and access logging."],
       ] },
       { h: ["8. 개인정보 보호책임자", "8. Privacy officer"], p: [
-        ["성명 【이름】 · 이메일 【privacy@도메인】. 개인정보 침해 신고: 개인정보침해신고센터(privacy.kisa.or.kr, 국번없이 118), 개인정보분쟁조정위원회(kopico.go.kr, 1833-6972).", "Name 【Name】 · Email 【privacy@domain】."],
+        ["성명 이영조 · 이메일 choisunfriend@gmail.com. 개인정보 침해 신고: 개인정보침해신고센터(privacy.kisa.or.kr, 국번없이 118), 개인정보분쟁조정위원회(kopico.go.kr, 1833-6972).", "Lee Youngjo · choisunfriend@gmail.com."],
       ] },
       { h: ["9. 변경", "9. Changes"], p: [
         ["이 방침이 바뀌면 시행 7일 전(중요한 변경은 30일 전)에 서비스 안에서 알립니다.", "We will notify you in the Service 7 days before changes take effect (30 days for material changes)."],

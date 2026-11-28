@@ -7,7 +7,7 @@ import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, LOCALE_HEADER, normalizeLocale, t
 // ============================================================================
 // 마켓플레이스 접근 규칙 (2026-10-17 보안 1차)
 // ============================================================================
-// ① 매장 화면(/shop, 상품 페이지 등)은 GYEOL 앱 안(iframe)에서만 열립니다.
+// ① 매장 화면(/shop, 상품 페이지 등)은 Today's Stylepeek 앱 안(iframe)에서만 열립니다.
 //    주소창에 직접 치거나 새 탭으로 열면(브라우저가 Sec-Fetch-Dest: document 를 붙임)
 //    안내 화면(403)을 보여 줍니다. iframe 을 띄울 수 있는 부모는 CSP frame-ancestors 로
 //    앱 주소(APP_ORIGINS, 기본 https://choisunfriend.github.io)만 허용합니다.
@@ -37,9 +37,9 @@ function isPlatformOnlyPath(p: string) {
 
 function blockedPage(): NextResponse {
   const app = appOrigins()[0] ?? "https://choisunfriend.github.io"
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GYEOL</title>
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Today's Stylepeek</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#1b1816;color:#f3e9da;text-align:center;padding:24px}a{color:#c98b52}</style></head>
-<body><div><h1 style="font-size:20px">This shop opens inside the GYEOL app</h1><p>이 쇼핑몰은 GYEOL 앱 안에서만 열립니다.</p><p><a href="${app}/">Open the app</a></p></div></body></html>`
+<body><div><h1 style="font-size:20px">This shop opens inside the Today's Stylepeek app</h1><p>이 쇼핑몰은 Today's Stylepeek 앱 안에서만 열립니다.</p><p><a href="${app}/">Open the app</a></p></div></body></html>`
   return new NextResponse(html, {
     status: 403,
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },

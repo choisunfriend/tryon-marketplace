@@ -1,7 +1,7 @@
 "use client"
 
 // ============================================================================
-// GYEOL 앱 ↔ 마켓플레이스(iframe) 메시지 다리 — 허용된 앱 주소하고만 주고받음
+// Today's Stylepeek 앱 ↔ 마켓플레이스(iframe) 메시지 다리 — 허용된 앱 주소하고만 주고받음
 // ============================================================================
 // 앱은 iframe 을 referrerpolicy="no-referrer" 로 띄우므로 document.referrer 가 비어 있을 수 있습니다.
 // 부모 주소는 ① location.ancestorOrigins(크롬·사파리) ② document.referrer ③ 앱이 보낸 gyeol-hello 의

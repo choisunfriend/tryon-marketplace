@@ -62,11 +62,20 @@ export function LoginPrompt() {
   const allOn = CONSENT_ITEMS.every((i) => checks[i.id])
   const requiredOk = CONSENT_ITEMS.every((i) => !i.required || checks[i.id])
 
-  const startLogin = () => {
+  // 켜진 로그인 방식 (구글·카카오는 Cloudflare 값을 넣어야 보임)
+  const [prov, setProv] = useState({ apple: true, google: false, kakao: false })
+  useEffect(() => {
+    if (!open) return
+    let alive = true
+    api<{ providers: typeof prov }>("/api/customer/config").then((r) => { if (alive && r.ok && r.data.providers) setProv({ ...r.data.providers, apple: true }) })
+    return () => { alive = false }
+  }, [open, api])
+
+  const startLogin = (p: "apple" | "google" | "kakao") => {
     setTried(true)
     if (!requiredOk) return
     savePendingConsent(checks)
-    login("apple")
+    login(p)
   }
 
   useEffect(() => {
@@ -146,11 +155,23 @@ export function LoginPrompt() {
             <Button
               className="h-11 w-full bg-black text-white hover:bg-black/90"
               disabled={loggingIn}
-              onClick={startLogin}
+              onClick={() => startLogin("apple")}
             >
               <span aria-hidden className="mr-2 text-lg leading-none"></span>
               {loggingIn ? L("로그인 중…", "Signing in…") : L("동의하고 Apple로 계속하기", "Agree and continue with Apple")}
             </Button>
+            {prov.google && (
+              <Button variant="outline" className="h-11 w-full" disabled={loggingIn} onClick={() => startLogin("google")}>
+                <span aria-hidden className="mr-2 font-bold text-[#4285F4]">G</span>
+                {L("동의하고 Google로 계속하기", "Agree and continue with Google")}
+              </Button>
+            )}
+            {prov.kakao && (
+              <Button className="h-11 w-full bg-[#FEE500] text-black/85 hover:bg-[#FEE500]/90" disabled={loggingIn} onClick={() => startLogin("kakao")}>
+                <span aria-hidden className="mr-2">💬</span>
+                {L("동의하고 카카오로 계속하기", "Agree and continue with Kakao")}
+              </Button>
+            )}
             {error && error !== "cancelled" && (
               <p className="text-sm text-destructive">{L("로그인하지 못했어요. 다시 시도해 주세요.", "Couldn't sign in. Please try again.")}</p>
             )}
