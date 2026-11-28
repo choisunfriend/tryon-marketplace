@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ShoppingBag, Heart, Shirt } from "lucide-react"
 import { toast } from "sonner"
-import { useCartStore } from "@/store/cart"
+import { useRequireLogin } from "@/components/auth/login-prompt"
 import { useWishlistStore } from "@/store/wishlist"
 import { useRecentlyViewedStore } from "@/store/recently-viewed"
 import { RecentlyViewed } from "@/components/products/recently-viewed"
@@ -53,8 +53,7 @@ export function ProductDetailView({
   )
   const [quantity, setQuantity] = useState(1)
 
-  const addToCart = useCartStore((s) => s.addItem)
-  const openCart = useCartStore((s) => s.openCart)
+  const requireLogin = useRequireLogin()
   const wishlistItems = useWishlistStore((s) => s.items)
   const addToWishlist = useWishlistStore((s) => s.addItem)
   const removeFromWishlist = useWishlistStore((s) => s.removeItem)
@@ -141,18 +140,13 @@ export function ProductDetailView({
     selectedVariant.inventory.quantity > 0 ||
     selectedVariant.inventory.allowBackorder
 
+  // (2026-11-28) 결제는 아직 — 구매하기를 누르면 로그인 확인 후 "곧 열려요" 안내
+  //   결제를 붙일 때: 아래를 장바구니 담기(addToCart/openCart)로 되돌리고 헤더 장바구니를 다시 켬
   function handleAddToCart() {
-    addToCart({
-      variantId: selectedVariant!.id,
-      productId: product.id,
-      name: product.name,
-      variantName: selectedVariant!.name,
-      image: product.images[0] ?? { url: "", alt: product.name },
-      slug: product.slug,
-      price: selectedVariant!.price,
-      quantity,
-    })
-    openCart()
+    requireLogin(
+      () => toast.info(L("온라인 구매는 곧 열려요. 지금은 입어 보기와 미용실 예약을 이용해 주세요.", "Online purchase is coming soon. For now, try it on or book a salon.")),
+      L("구매하려면 로그인해 주세요.", "Please sign in to purchase.")
+    )
   }
 
   function handleToggleWishlist() {
@@ -318,7 +312,7 @@ export function ProductDetailView({
               onClick={handleAddToCart}
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
-              {inStock ? L("장바구니 담기", "Add to Cart") : L("품절", "Out of Stock")}
+              {inStock ? L("구매하기", "Buy") : L("품절", "Out of Stock")}
             </Button>
             {canTryOn && (
               <Button

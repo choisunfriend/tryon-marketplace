@@ -8,6 +8,7 @@ import { withLang } from "@/i18n/api"
 import { bi } from "@/i18n/l"
 import { cfail, cjson, preflight, readJson, requireCustomer } from "@/lib/customer-auth"
 import { deleteCustomer, getCustomer, toPublic, updateProfile } from "@/lib/customers-db"
+import { scrubCustomerBookings } from "@/lib/bookings-db"
 
 async function handleGET(request: Request) {
   const g = await requireCustomer(request)
@@ -30,6 +31,8 @@ async function handleDELETE(request: Request) {
   if ("err" in g) return g.err
   const body = await readJson(request)
   if (!body || body.confirm !== "DELETE") return cfail(request, bi('확인값이 필요합니다 (confirm: "DELETE")', 'Confirmation required (confirm: "DELETE")'))
+  // (2026-11-28) 예약: 앞으로의 예약은 취소 · 이름·연락처·메모 지움 · 고객 연결 끊음
+  await scrubCustomerBookings(g.db, g.customer.id)
   await deleteCustomer(g.db, g.customer.id)
   return cjson(request, { success: true })
 }

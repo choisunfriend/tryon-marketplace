@@ -9,14 +9,14 @@
 // 앱 주소를 바꾸면 NEXT_PUBLIC_APP_ORIGINS(공백 구분)를 설정하세요.
 // ============================================================================
 
-const DEFAULT_APP_ORIGINS = ["https://choisunfriend.github.io"]
+const DEFAULT_APP_ORIGINS = ["https://choisunfriend.github.io", "capacitor://localhost"]
 
 function allowedOrigins(): string[] {
   const raw = process.env.NEXT_PUBLIC_APP_ORIGINS ?? ""
   const list = raw
     .split(/[\s,]+/)
     .map((s) => s.trim())
-    .filter((s) => /^https:\/\/[A-Za-z0-9.-]+(:\d+)?$/.test(s))
+    .filter((s) => /^(https|capacitor):\/\/[A-Za-z0-9.-]+(:\d+)?$/.test(s))
   return list.length ? list : DEFAULT_APP_ORIGINS
 }
 
@@ -71,4 +71,10 @@ export function postToApp(message: unknown): boolean {
   } catch {
     return false
   }
+}
+
+/** 앱스토어 앱(capacitor) 안에서 열렸는지 — 네이티브 로그인 버튼을 보일지 정할 때 */
+export function inNativeApp(): boolean {
+  const o = parentAppOrigin()
+  return !!o && o.startsWith("capacitor://")
 }

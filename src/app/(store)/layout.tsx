@@ -1,8 +1,8 @@
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { AnnouncementBar } from "@/components/layout/announcement-bar"
-import { CartDrawer } from "@/components/cart/cart-drawer"
 import { BackToTop } from "@/components/layout/back-to-top"
+import { LoginPrompt } from "@/components/auth/login-prompt"
 import { categoryRepository } from "@/lib/repositories"
 import { getL } from "@/i18n/server"
 
@@ -30,7 +30,7 @@ export default async function StoreLayout({
         {children}
       </main>
       <Footer />
-      <CartDrawer />
+      <LoginPrompt />
       <BackToTop />
     </>
   )

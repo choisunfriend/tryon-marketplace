@@ -75,7 +75,7 @@ function securityHeaders(response: NextResponse, admin: boolean, turnstile = fal
     "base-uri 'self'",
     "form-action 'self'",
     ...(turnstile ? ["frame-src https://challenges.cloudflare.com"] : []),
-    `frame-ancestors ${admin ? "'none'" : ["'self'", ...appOrigins()].join(" ")}`,
+    `frame-ancestors ${admin ? "'none'" : ["'self'", ...appOrigins(), ...nativeFrameAncestors()].join(" ")}`,
   ].join("; ")
   response.headers.set("Content-Security-Policy", csp)
   return response
@@ -151,4 +151,11 @@ export const config = {
     // API·정적 파일·Next 내부 경로는 빼고 모든 화면에 적용
     "/((?!api/|_next/static|_next/image|favicon.ico|images|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
+}
+
+// (2026-11-28) 앱스토어 앱(Capacitor)은 capacitor://localhost 에서 쇼핑몰을 iframe 으로 띄웁니다.
+//   https 웹앱 목록(APP_ORIGINS)과 따로 둡니다. 바꾸려면 NATIVE_FRAME_ANCESTORS(공백 구분).
+function nativeFrameAncestors(): string[] {
+  const raw = (process.env.NATIVE_FRAME_ANCESTORS ?? "capacitor://localhost")
+  return raw.split(/[\s,]+/).map((s) => s.trim()).filter((s) => /^(capacitor|ionic|https):\/\/[A-Za-z0-9.-]+(:\d+)?$/.test(s))
 }

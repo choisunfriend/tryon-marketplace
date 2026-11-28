@@ -1,15 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Search, ShoppingBag, User, Menu, Heart, LogOut, ChevronDown } from "lucide-react"
+import { Search, User, Menu, Heart, ChevronDown } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { SearchModal } from "@/components/search/search-modal"
 import { cn } from "@/lib/utils"
 import { shopLinks, mobileMenuSections } from "@/lib/navigation"
@@ -17,14 +10,13 @@ import { useL } from "@/i18n/use-l"
 import { catName } from "@/i18n/catalog"
 import { siteConfig } from "@/lib/config"
 import { useTranslations } from "next-intl"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import type { Category } from "@/types"
-import { useCartStore } from "@/store/cart"
-import { useAuthStore } from "@/store/auth"
+import { useCustomer } from "@/store/customer"
+import { useRequireLogin } from "@/components/auth/login-prompt"
 import { useRouter } from "next/navigation"
 
 // (2026-11-15) 손님 로그인은 아직 없음 — 진짜 로그인을 붙이면 true 로
-const CUSTOMER_LOGIN = false
 
 interface HeaderProps {
   /** All categories (top-level + subcategories) from the repository layer */
@@ -39,16 +31,10 @@ export function Header({ categories = [] }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
-  const openCart = useCartStore((s) => s.openCart)
-  const getItemCount = useCartStore((s) => s.getItemCount)
-  const user = useAuthStore((s) => s.user)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const logout = useAuthStore((s) => s.logout)
+  const me = useCustomer((s) => s.me)
+  const requireLogin = useRequireLogin()
   const router = useRouter()
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  const itemCount = mounted ? getItemCount() : 0
 
   // Cmd+K / Ctrl+K to open search
   useEffect(() => {
@@ -183,67 +169,21 @@ export function Header({ categories = [] }: HeaderProps) {
             <Heart className="h-5 w-5" />
           </Link>
 
-          {/* User menu — desktop only */}
-          {CUSTOMER_LOGIN && mounted && isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="hidden h-10 w-10 items-center justify-center rounded-md hover:bg-accent lg:inline-flex"
-                aria-label={t("accountMenu")}
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-xs font-medium text-background">
-                  {user?.firstName?.[0] ?? "U"}
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/account")}>
-                  {L("내 계정", "My Account")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/account/orders")}>
-                  {L("주문 내역", "Orders")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/account/settings")}>
-                  {L("설정", "Settings")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { logout(); router.push("/") }}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {tCommon("signOut")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : CUSTOMER_LOGIN ? (
-            <Link
-              href="/auth/login"
-              className="hidden h-10 w-10 items-center justify-center rounded-md hover:bg-accent lg:inline-flex"
-              aria-label={tCommon("signIn")}
-            >
-              <User className="h-5 w-5" />
-            </Link>
-          ) : null}
-
-          {/* Cart */}
+          {/* (2026-11-28) 내 계정 — 모바일(앱)에서도 보임 · 로그인 안 돼 있으면 로그인 창 */}
           <button
-            onClick={openCart}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
-            aria-label={t("openCart")}
+            onClick={() => (me?.kind === "member" ? router.push("/account") : requireLogin(() => router.push("/account")))}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
+            aria-label={me?.kind === "member" ? L("내 계정", "My Account") : tCommon("signIn")}
           >
-            <ShoppingBag className="h-5 w-5" />
-            {itemCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-background"
-                aria-live="polite"
-                aria-atomic="true"
-                aria-label={L(`장바구니에 ${itemCount}개`, `${itemCount} ${itemCount === 1 ? "item" : "items"} in cart`)}
-              >
-                {itemCount > 9 ? "9+" : itemCount}
+            {me?.kind === "member" ? (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-xs font-medium text-background">
+                {(me.displayName || me.email || "U").slice(0, 1).toUpperCase()}
               </span>
+            ) : (
+              <User className="h-5 w-5" />
             )}
           </button>
+          {/* 장바구니는 결제를 붙일 때 다시 켭니다 (2026-11-28 · 지금은 예약만) */}
         </div>
       </div>
     </header>

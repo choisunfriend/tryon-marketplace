@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- (2026-11-01) 관리자 화면은 일반 페이지 이동(<a>·location)을 씀 — layout.tsx 설명 */
 
 import { useEffect, useState } from "react"
-import { LayoutDashboard, Package, Users, RefreshCw, LogOut, Store, Wallet, Scissors, MapPin } from "lucide-react"
+import { LayoutDashboard, Package, Users, RefreshCw, LogOut, Store, Wallet, Scissors, MapPin, CalendarDays } from "lucide-react"
 import { TranslateGuard } from "@/components/translate-guard"
 import { LangSwitch } from "@/components/i18n/lang-switch"
 import { useL } from "@/i18n/client"
@@ -22,6 +22,7 @@ const adminNav = [
   { ko: "R2 동기화", en: "R2 sync", href: "/admin/sync", icon: RefreshCw, platform: true },
   // (2026-11-14) 「3D 굽기」 메뉴 뺌 — 상품 등록·수정 화면의 3D 칸 옆 「굽기」 버튼으로 옮김 (화면 /admin/bake 은 남아 있음)
   { ko: "미용실", en: "Salons", href: "/admin/salons", icon: Scissors }, // (2026-11-01) 미용실 지도·헤어스타일
+  { ko: "예약 스케줄", en: "Bookings", href: "/admin/bookings", icon: CalendarDays }, // (2026-11-28) 미용실 예약
   { ko: "옷가게 매장", en: "Clothing shops", href: "/admin/shops", icon: MapPin }, // (2026-11-22) 옷가게 지점 지도
   { ko: "고객", en: "Customers", href: "/admin/customers", icon: Users },
 ]

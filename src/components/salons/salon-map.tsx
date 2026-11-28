@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { SalonBooking } from "@/components/salons/salon-booking"
 import { listenForAppHello, parentAppOrigin, postToApp } from "@/lib/app-bridge"
 import { distanceKm, formatMinor, geocode, MAP_STYLE_URL } from "@/lib/map"
 import { browserMapView, localizeMapLabels } from "@/lib/browser-locale"
@@ -640,9 +641,11 @@ export function SalonMap() {
                 rel="noopener noreferrer"
                 className="mb-4 inline-flex items-center gap-1 text-sm font-medium underline"
               >
-                {L("예약하기", "Book")} <ExternalLink className="h-3.5 w-3.5" />
+                {L("미용실 예약 페이지", "Salon booking page")} <ExternalLink className="h-3.5 w-3.5" />
               </a>
             )}
+
+            <SalonBooking salonId={selected.salon.id} salonName={selected.salon.name} styles={selected.styles} />
 
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <Scissors className="h-4 w-4" /> {L("헤어스타일", "Hairstyles")} {selected.styles.length}
