@@ -3,9 +3,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { siteConfig } from "@/lib/config"
-import { formatPrice } from "@/lib/utils"
 import { ProductGrid } from "@/components/products/product-grid"
 import { NewsletterForm } from "@/components/layout/newsletter-form"
 import { PLACEHOLDER_IMAGE } from "@/lib/constants"
@@ -14,29 +12,10 @@ import { getL } from "@/i18n/server"
 import { catName } from "@/i18n/catalog"
 
 export const metadata: Metadata = {
-  title: "Next.js Ecommerce Starter — Free Open-Source Template | Epic Design Labs",
-  description:
-    "A free, production-ready Next.js ecommerce starter built with Tailwind CSS and shadcn/ui. Includes cart, checkout, search, auth, wishlist, i18n, SEO, and accessibility. Open source on GitHub.",
+  title: "Today's Stylepeek — 3D hairstyle try-on, salons and outfits",
+  description: siteConfig.description,
   alternates: { canonical: "/" },
-  openGraph: {
-    title: "Next.js Ecommerce Starter — Free Open-Source Template",
-    description:
-      "A free, production-ready Next.js ecommerce starter built with Tailwind CSS and shadcn/ui. Open source on GitHub.",
-    type: "website",
-    url: siteConfig.url,
-  },
-  keywords: [
-    "nextjs ecommerce starter",
-    "next.js ecommerce template",
-    "nextjs store template",
-    "react ecommerce starter",
-    "tailwind ecommerce template",
-    "shadcn ecommerce",
-    "free ecommerce template",
-    "open source ecommerce",
-    "nextjs shopping cart",
-    "ecommerce starter kit",
-  ],
+  openGraph: { title: "Today's Stylepeek", description: siteConfig.description, type: "website", url: siteConfig.url },
 }
 
 export default async function HomePage() {
@@ -50,14 +29,11 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative flex h-[650px] items-center justify-center bg-neutral-50">
         <div className="mx-auto max-w-3xl px-4 text-center">
-          <Badge variant="secondary" className="mb-4">
-            {L(`${formatPrice(siteConfig.freeShippingThreshold)} 이상 주문 시 무료 배송`, `Free shipping on orders over ${formatPrice(siteConfig.freeShippingThreshold)}`)}
-          </Badge>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Next.js Ecommerce Starter
+            Today&apos;s Stylepeek
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            {L("Next.js, Tailwind CSS, shadcn/ui로 만든 무료 오픈소스 쇼핑몰 템플릿. 바로 운영할 수 있고, 모든 화면 크기에 맞춰지며, 어떤 결제 시스템과도 연결됩니다.", "A free, open-source ecommerce template built with Next.js, Tailwind CSS, and shadcn/ui. Production-ready, fully responsive, and designed to connect to any checkout system.")}
+            {L("내 3D 모습에 헤어스타일과 옷을 입어 보고, 그 스타일을 하는 미용실을 찾아 바로 예약하세요.", "Try hairstyles and outfits on your own 3D look, then find a salon that does the style and book it.")}
           </p>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
@@ -67,8 +43,8 @@ export default async function HomePage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="https://github.com/Epic-Design-Labs/nextjs-ecommerce-starter" target="_blank" rel="noopener">
-                {L("GitHub에서 보기", "View on GitHub")}
+              <Link href="/salons">
+                {L("미용실 찾기", "Find a salon")}
               </Link>
             </Button>
           </div>
@@ -125,31 +101,6 @@ export default async function HomePage() {
         </div>
         <div className="mt-8">
           <ProductGrid products={featuredProducts} />
-        </div>
-      </section>
-
-      {/* Developer CTA */}
-      <section className="border-t bg-neutral-50">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center px-4 py-16 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {L("상점 만들기에 도움이 필요하신가요?", "Need help building your store?")}
-          </h2>
-          <p className="mt-4 max-w-xl text-muted-foreground">
-            {L("이 템플릿은 무료 오픈소스입니다. GitHub에서 받아 직접 만들거나, Epic Design Labs 팀과 함께 원하는 상점을 만들어 보세요.", "This starter is free and open source. Grab it from GitHub and build your own, or work with our team at Epic Design Labs to bring your vision to life.")}
-          </p>
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <Button size="lg" asChild>
-              <Link href="https://github.com/Epic-Design-Labs/nextjs-ecommerce-starter" target="_blank" rel="noopener">
-                {L("템플릿 받기", "Get the Starter")}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="https://epicdesignlabs.com" target="_blank" rel="noopener">
-                {L("개발자에게 맡기기", "Hire a Developer")}
-              </Link>
-            </Button>
-          </div>
         </div>
       </section>
 

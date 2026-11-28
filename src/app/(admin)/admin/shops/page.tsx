@@ -154,7 +154,7 @@ export default function AdminShopsPage() {
     <div className="space-y-6">
       <PageHeader
         title={L("옷가게 매장", "Clothing shops")}
-        description={L("지도에 오프라인 매장(지점)을 올립니다. 손님 지도에서는 이 입점사의 상품이 메뉴판으로 보이고, 바로 GYEOL 에서 입어 볼 수 있어요.", "Put your physical shops (branches) on the map. On the customer map your store's products show as the menu and can be tried on in GYEOL.")}
+        description={L("지도에 오프라인 매장(지점)을 올립니다. 손님 지도에서는 이 입점사의 상품이 메뉴판으로 보이고, 바로 Today's Stylepeek 에서 입어 볼 수 있어요.", "Put your physical shops (branches) on the map. On the customer map your store's products show as the menu and can be tried on in Today's Stylepeek.")}
       />
       {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
       {msg && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{msg}</p>}

@@ -3,7 +3,7 @@ import { getL } from "@/i18n/server"
 import { SalonMap } from "@/components/salons/salon-map"
 import { TranslateGuard } from "@/components/translate-guard"
 
-// (2026-11-01) 미용실 세계 지도 — 위치 기반으로 미용실을 찾고, 그 미용실의 헤어스타일을 GYEOL 에서 3D 로 입어 봄
+// (2026-11-01) 미용실 세계 지도 — 위치 기반으로 미용실을 찾고, 그 미용실의 헤어스타일을 Today's Stylepeek 에서 3D 로 입어 봄
 export async function generateMetadata(): Promise<Metadata> {
   const { L } = await getL()
   return {

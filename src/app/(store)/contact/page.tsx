@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
-import { Mail, Globe, GitFork } from "lucide-react"
+import { Mail } from "lucide-react"
+import { siteConfig } from "@/lib/config"
 import { toast } from "sonner"
 import { contactFormSchema } from "@/lib/validators"
 import { useL } from "@/i18n/use-l"
@@ -37,13 +38,12 @@ export default function ContactPage() {
       return
     }
 
+    // (2026-11-28) 보내는 서버가 없으므로 메일 앱으로 넘김(예전 템플릿은 보낸 척만 했음)
     setLoading(true)
-    // In production, send to support@epicdesignlabs.com via API route or form service
-    setTimeout(() => {
-      toast.success(L("메시지를 보냈어요! 곧 답해 드릴게요.", "Message sent! We’ll get back to you soon."))
-      setForm({ name: "", email: "", subject: "", message: "" })
-      setLoading(false)
-    }, 500)
+    const body = `${form.message}\n\n— ${form.name} <${form.email}>`
+    window.location.href = `mailto:${siteConfig.contact.email}?subject=${encodeURIComponent("[Today's Stylepeek] " + form.subject)}&body=${encodeURIComponent(body)}`
+    toast.success(L("메일 앱에서 보내기를 눌러 주세요.", "Press send in your mail app."))
+    setLoading(false)
   }
 
   return (
@@ -51,8 +51,8 @@ export default function ContactPage() {
       <PageHeader
         title={L("문의하기", "Contact Us")}
         description={L(
-          "템플릿에 대해 궁금한 점이 있거나, 맞춤 작업이 필요하거나, 저희 팀과 함께 일하고 싶으신가요? 편하게 연락 주세요.",
-          "Have a question about the starter template, need help with customization, or want to work with our team? We’d love to hear from you."
+          "앱 사용, 미용실 예약, 입점 문의 등 무엇이든 편하게 연락 주세요.",
+          "Questions about the app, salon bookings or becoming a seller? We’d love to hear from you."
         )}
       />
 
@@ -68,46 +68,10 @@ export default function ContactPage() {
             </CardHeader>
             <CardContent>
               <a
-                href="mailto:support@epicdesignlabs.com"
+                href={`mailto:${siteConfig.contact.email}`}
                 className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
-                support@epicdesignlabs.com
-              </a>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Globe className="h-4 w-4" />
-                {L("웹사이트", "Website")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <a
-                href="https://epicdesignlabs.com"
-                target="_blank"
-                rel="noopener"
-                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
-              >
-                epicdesignlabs.com
-              </a>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <GitFork className="h-4 w-4" />
-                GitHub
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <a
-                href="https://github.com/Epic-Design-Labs/nextjs-ecommerce-starter"
-                target="_blank"
-                rel="noopener"
-                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
-              >
-                {L("GitHub에서 보기", "View on GitHub")}
+                {siteConfig.contact.email}
               </a>
             </CardContent>
           </Card>

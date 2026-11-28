@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { useL } from "@/i18n/client"
 
 // ============================================================================
-// (2026-11-01) GYEOL 앱 「미용실에 올리기」 받는 화면
+// (2026-11-01) Today's Stylepeek 앱 「미용실에 올리기」 받는 화면
 // ============================================================================
 // 앱이 새 창으로 /admin/salons/upload#d=<base64url JSON { spec, thumb }> 를 엶.
 //   · #뒤는 서버로 가지 않음 · 로그인 전이면 /admin-login 을 거쳐 그대로 돌아옴
@@ -126,7 +126,7 @@ export default function SalonStyleUploadPage() {
       <div className="max-w-xl space-y-3">
         <PageHeader
           title={L("스타일 올리기", "Post a style")}
-          description={L("GYEOL 앱에서 머리를 만든 뒤 「미용실에 올리기」를 누르면 이 화면이 열립니다.", "This page opens when you tap “Post to salon” after creating a hairstyle in the GYEOL app.")}
+          description={L("Today's Stylepeek 앱에서 머리를 만든 뒤 「미용실에 올리기」를 누르면 이 화면이 열립니다.", "This page opens when you tap “Post to salon” after creating a hairstyle in the Today's Stylepeek app.")}
         />
         <p className="text-sm text-muted-foreground">{L("받은 스타일이 없어요. 앱에서 다시 눌러 주세요.", "No style was received. Tap it again in the app.")}</p>
         <a href="/admin/salons" className="text-sm underline">{L("미용실 관리로", "Go to salons")}</a>
@@ -154,7 +154,7 @@ export default function SalonStyleUploadPage() {
     <div className="max-w-2xl space-y-5">
       <PageHeader
         title={L("스타일 올리기", "Post a style")}
-        description={L("GYEOL 에서 만든 머리를 내 미용실 헤어스타일로 등록합니다.", "Register a hairstyle made in GYEOL as one of your salon’s styles.")}
+        description={L("Today's Stylepeek 에서 만든 머리를 내 미용실 헤어스타일로 등록합니다.", "Register a hairstyle made in Today's Stylepeek as one of your salon’s styles.")}
       />
       {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
 

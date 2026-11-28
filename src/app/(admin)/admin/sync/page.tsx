@@ -51,7 +51,7 @@ function guessName(f: Folder): string {
 }
 
 function pickModel(models: string[]): string {
-  // 앱(GYEOL)은 OBJ만 입히므로 OBJ를 먼저, 없으면 GLB/GLTF
+  // 앱(Today's Stylepeek)은 OBJ만 입히므로 OBJ를 먼저, 없으면 GLB/GLTF
   return (
     models.find((m) => /\.obj$/i.test(m)) ??
     models.find((m) => /\.(glb|gltf)$/i.test(m)) ??
@@ -191,8 +191,8 @@ export default function AdminSyncPage() {
       <h1 className="mb-2 text-2xl font-semibold">{L("R2 동기화", "R2 sync")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {L(
-          "R2에 파일은 올라갔는데 상품 목록(DB)에 없는 폴더입니다. 정보를 확인하고 등록하면 쇼핑몰과 GYEOL 앱에 바로 나옵니다.",
-          "Folders that are in R2 but not in the product list (DB). Check the details and add them — they show up in the shop and the GYEOL app right away."
+          "R2에 파일은 올라갔는데 상품 목록(DB)에 없는 폴더입니다. 정보를 확인하고 등록하면 쇼핑몰과 Today's Stylepeek 앱에 바로 나옵니다.",
+          "Folders that are in R2 but not in the product list (DB). Check the details and add them — they show up in the shop and the Today's Stylepeek app right away."
         )}
       </p>
 

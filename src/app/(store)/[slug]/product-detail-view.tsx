@@ -63,11 +63,11 @@ export function ProductDetailView({
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  // GYEOL 앱 iframe 안에서 열렸을 때만 "Try on" 버튼을 보여 줍니다.
-  // 누르면 부모(GYEOL)에 gyeol-wear 메시지를 보내고, 앱이 3D 몸에 옷을 입힙니다.
+  // Today's Stylepeek 앱 iframe 안에서 열렸을 때만 "Try on" 버튼을 보여 줍니다.
+  // 누르면 부모(Today's Stylepeek)에 gyeol-wear 메시지를 보내고, 앱이 3D 몸에 옷을 입힙니다.
   const [inGyeol, setInGyeol] = useState(false)
   useEffect(() => {
-    // 허용된 GYEOL 앱 origin 이 부모일 때만 Try on 을 켭니다
+    // 허용된 Today's Stylepeek 앱 origin 이 부모일 때만 Try on 을 켭니다
     const update = () => setInGyeol(parentAppOrigin() !== null)
     update()
     const stop = listenForAppHello()
@@ -80,12 +80,12 @@ export function ProductDetailView({
   const modelFile = product.media?.model_file || product.model3d?.modelPath || ""
   const canTryOn = inGyeol && /\.obj(\?|#|$)/i.test(modelFile)
   const handleTryOn = () => {
-    // 부모가 허용된 GYEOL 앱일 때 그 origin 으로만 보냄 ("*" 금지)
+    // 부모가 허용된 Today's Stylepeek 앱일 때 그 origin 으로만 보냄 ("*" 금지)
     const sent = postToApp(
       {
         type: "gyeol-wear",
         id: product.id,
-        // GYEOL 앱의 어댑터(_fromMarketplace)가 이 형태를 그대로 읽습니다
+        // Today's Stylepeek 앱의 어댑터(_fromMarketplace)가 이 형태를 그대로 읽습니다
         item: {
           id: product.id,
           name: product.name,
@@ -98,8 +98,8 @@ export function ProductDetailView({
         },
       }
     )
-    if (sent) toast.success(L("GYEOL에서 입혀 보는 중…", "Trying it on in GYEOL…"))
-    else toast.error(L("GYEOL 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the GYEOL app"))
+    if (sent) toast.success(L("Today's Stylepeek에서 입혀 보는 중…", "Trying it on in Today's Stylepeek…"))
+    else toast.error(L("Today's Stylepeek 앱 안에서만 입어 볼 수 있어요", "You can only try it on inside the Today's Stylepeek app"))
   }
   const isWishlisted = mounted && wishlistItems.some((i) => i.productId === product.id)
   // (2026-11-24) 입어 보기 옆에 (남성용, 상의)처럼 어느 몸·어느 자리 옷인지 표시

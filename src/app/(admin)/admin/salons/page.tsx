@@ -9,9 +9,9 @@ import { useL } from "@/i18n/client"
 // ============================================================================
 // (2026-11-01) 미용실 관리 — 입점사(미용실) 계정 · 플랫폼 운영자
 //   · 미용실(지점) 등록: 이름·주소·지도 위치·연락처·영업시간·예약 링크
-//   · 헤어스타일은 GYEOL 앱의 「미용실에 올리기」로만 추가 (→ /admin/salons/upload)
+//   · 헤어스타일은 Today's Stylepeek 앱의 「미용실에 올리기」로만 추가 (→ /admin/salons/upload)
 //     여기서는 이름·가격·대상·순서·숨김만 고침 (스타일 모양은 앱에서 다시 만들어 올림)
-//   손님은 매장의 /salons 지도에서 미용실을 찾아 GYEOL 앱으로 3D 로 입어 봅니다.
+//   손님은 매장의 /salons 지도에서 미용실을 찾아 Today's Stylepeek 앱으로 3D 로 입어 봅니다.
 // ============================================================================
 
 type Salon = {
@@ -257,7 +257,7 @@ export default function AdminSalonsPage() {
     <div className="space-y-6">
       <PageHeader
         title={L("미용실", "Salons")}
-        description={L("지도에 미용실을 올리고, 손님이 GYEOL 에서 3D 로 입어 볼 헤어스타일을 등록합니다.", "Put salons on the map and register hairstyles customers can try on in 3D in GYEOL.")}
+        description={L("지도에 미용실을 올리고, 손님이 Today's Stylepeek 에서 3D 로 입어 볼 헤어스타일을 등록합니다.", "Put salons on the map and register hairstyles customers can try on in 3D in Today's Stylepeek.")}
       />
       {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
       {msg && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{msg}</p>}
@@ -383,7 +383,7 @@ export default function AdminSalonsPage() {
         <section className="space-y-3 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">{L(`「${styleSalon.name}」 헤어스타일`, `“${styleSalon.name}” hairstyles`)} {styles.length}</h2>
-            <p className="text-xs text-muted-foreground">{L("스타일 추가는 GYEOL 앱 손질 화면의 「미용실에 올리기」로", "Add styles with “Post to salon” on the GYEOL app’s styling screen")}</p>
+            <p className="text-xs text-muted-foreground">{L("스타일 추가는 Today's Stylepeek 앱 손질 화면의 「미용실에 올리기」로", "Add styles with “Post to salon” on the Today's Stylepeek app’s styling screen")}</p>
           </div>
           <ul className="divide-y rounded-md border">
             {styles.map((st) => {
@@ -407,7 +407,7 @@ export default function AdminSalonsPage() {
             })}
             {!styles.length && (
               <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                {L("아직 스타일이 없어요. GYEOL 앱에서 머리를 만든 뒤 「미용실에 올리기」를 눌러 주세요.", "No styles yet. Create a hairstyle in the GYEOL app, then tap “Post to salon”.")}
+                {L("아직 스타일이 없어요. Today's Stylepeek 앱에서 머리를 만든 뒤 「미용실에 올리기」를 눌러 주세요.", "No styles yet. Create a hairstyle in the Today's Stylepeek app, then tap “Post to salon”.")}
               </li>
             )}
           </ul>
