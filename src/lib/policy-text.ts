@@ -9,8 +9,8 @@ export interface Article { h: Bi; p: Bi[] }
 export interface PolicyDoc { title: Bi; effective: Bi; intro?: Bi; articles: Article[] }
 
 const BIZ: Bi = [
-  "상호 【YL컴퍼니】 · 대표 【대표자명】 · 사업자등록번호 【000-00-00000】 · 통신판매업신고 【제0000-서울00-0000호】 · 주소 【사업장 주소】 · 이메일 【support@도메인】",
-  "Business name 【YL Company】 · Representative 【Name】 · Business reg. no. 【000-00-00000】 · Mail-order reg. 【No.】 · Address 【Address】 · Email 【support@domain】",
+  "상호 【YL Company】 · 대표 【이영조】 · 사업자등록번호 【484-21-02064】 · 통신판매업신고 【제2025-경북구미-0728호】 · 주소 【경상북도 구미시 신시로16길 141 101-1006,우39277】 · 이메일 【choisunfriend@gmail.com】",
+  "Business name 【YL Company】 · Representative 【Youngjo LEE】 · Business reg. no. 【484-21-02064】 · Mail-order reg. 【No. 2025-경북구미-0728】 · Address 【141 Sinsi-ro 16-gil, Gumi-si, Gyeongsangbuk-do,39277】 · Email 【choisunfriend@gmail.com】",
 ]
 const EFF: Bi = ["시행일: 2026년 12월 1일", "Effective: December 1, 2026"]
 
